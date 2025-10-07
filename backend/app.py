@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_httpauth import HTTPBasicAuth
 from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
 import os
 from datetime import datetime
-from database import db, Report
-from ml_pipeline import calculate_severity, estimate_repair_cost, optimize_repair_budget, generate_repair_schedule
+from database import db, Report, ReportSchema
+from ml_pipeline import calculate_severity, estimate_repair_cost, optimize_repair_budget, generate_repair_schedule, MONTHLY_BUDGET
+import traceback
 
 app = Flask(__name__)
 
@@ -29,11 +31,23 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Explicit CORS configuration
 CORS(app, resources={
     r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "origins": "*",  # Allow all origins for development
+        "methods": ["GET", "POST", "PATCH", "OPTIONS"],  # Add PATCH for status updates
+        "allow_headers": ["Content-Type", "Authorization"]  # Add common headers
     }
 })
+
+# Basic HTTP Authentication setup
+auth = HTTPBasicAuth()
+users = {
+    "admin": "secret"  # In a real app, use hashed passwords and a database
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users and users[username] == password:
+        return username
+
 
 # Load model with proper path handling
 MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'pothole_baseline_v1.h5')
@@ -112,11 +126,11 @@ def predict():
         print(f"Is pothole: {is_pothole}, Confidence: {confidence}")
         
         # CALCULATE SEVERITY using ML confidence
-        severity = calculate_severity(confidence * 100, is_pothole)
+        severity = calculate_severity(confidence * 100, is_pothole) # Using pipeline_budget
         print(f"Severity: {severity}")
         
         # ESTIMATE COST based on severity
-        cost = estimate_repair_cost(severity, 'Pothole')
+        cost = estimate_repair_cost(severity, 'Pothole') # Using pipeline_budget
         print(f"Estimated cost: ₦{cost:,}")
         
         # Create database record
@@ -139,10 +153,10 @@ def predict():
         
         result = {
             'tracking_number': tracking_number,
-            'damage_detected': is_pothole,
-            'confidence': round(confidence * 100, 2),
-            'severity_score': severity,
-            'estimated_cost': cost,
+            'damage_detected': bool(is_pothole),
+            'confidence': float(round(confidence * 100, 2)),
+            'severity_score': int(severity),
+            'estimated_cost': int(cost),
             'damage_type': report.damage_type
         }
         
@@ -151,11 +165,45 @@ def predict():
         
     except Exception as e:
         print(f"ERROR in predict: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/reports/<int:report_id>/status', methods=['PATCH'])
+@auth.login_required
+def update_report_status(report_id):
+    """Manually update a report's status, assign contractor, or reject."""
+    report = Report.query.get_or_404(report_id)
+    data = request.get_json()
+
+    new_status = data.get('status')
+    if not new_status:
+        return jsonify({'error': 'New status is required'}), 400
+
+    print(f"\n=== STATUS UPDATE for Report ID {report_id} ===")
+    print(f"New status: {new_status}")
+
+    report.status = new_status
+
+    if new_status == 'scheduled':
+        contractor = data.get('contractor')
+        if not contractor:
+            return jsonify({'error': 'A valid contractor is required for scheduling'}), 400
+        report.assigned_contractor = contractor
+        report.rejection_reason = None # Clear any previous rejection reason
+        print(f"Assigned contractor: {contractor}")
+
+    elif new_status == 'rejected':
+        reason = data.get('reason', 'No reason provided.')
+        report.rejection_reason = reason
+        report.assigned_contractor = None # Clear contractor
+        print(f"Rejection reason: {reason}")
+
+    db.session.commit()
+    report_schema = ReportSchema()
+    return jsonify(report_schema.dump(report))
+
 @app.route('/api/optimize', methods=['POST', 'OPTIONS'])
+@auth.login_required
 def optimize_budget():
     """
     Run budget optimization on all pending reports
@@ -167,7 +215,7 @@ def optimize_budget():
     try:
         print("\n=== OPTIMIZATION REQUEST ===")
         data = request.get_json()
-        budget = data.get('budget', 1000000)  # Default ₦1M budget
+        budget = float(data.get('budget', MONTHLY_BUDGET))
         
         print(f"Budget: ₦{budget:,}")
         
@@ -181,13 +229,7 @@ def optimize_budget():
         
         # Prepare for optimization
         report_data = [{
-            'id': r.id,
-            'tracking_number': r.tracking_number,
-            'severity_score': r.severity_score,
-            'estimated_cost': r.estimated_cost,
-            'location': r.location,
-            'damage_type': r.damage_type,
-            'damage_detected': r.damage_detected
+            **r.to_dict(exclude=['created_at', 'updated_at']), 'id': r.id
         } for r in reports]
         
         # Run optimization
@@ -198,11 +240,20 @@ def optimize_budget():
         print(f"   - Total cost: ₦{schedule['total_cost']:,}")
         print(f"   - Budget utilization: {schedule['budget_utilization']:.1f}%")
         
+        # Update status of scheduled reports in the database
+        scheduled_ids = [report['id'] for report in schedule.get('scheduled_reports', [])]
+        if scheduled_ids:
+            Report.query.filter(
+                Report.id.in_(scheduled_ids)
+            ).update({'status': 'scheduled'}, synchronize_session=False)
+            db.session.commit()
+            print(f"Updated status to 'scheduled' for {len(scheduled_ids)} reports.")
+
+        
         return jsonify(schedule)
         
     except Exception as e:
         print(f"ERROR in optimize: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -214,13 +265,30 @@ def track_report(tracking_number):
     if not report:
         return jsonify({'error': 'Report not found'}), 404
     
-    return jsonify(report.to_dict())
+    report_schema = ReportSchema()
+    return jsonify(report_schema.dump(report))
 
 @app.route('/api/reports', methods=['GET'])
+@auth.login_required
 def get_all_reports():
     """Get all reports (for admin dashboard)"""
     reports = Report.query.order_by(Report.created_at.desc()).all()
-    return jsonify([report.to_dict() for report in reports])
+    report_schema = ReportSchema(many=True)
+    return jsonify(report_schema.dump(reports))
+
+@app.route('/api/contractors', methods=['GET'])
+@auth.login_required
+def get_contractors():
+    """Get the list of available contractors."""
+    return jsonify(["Julius Berger Nigeria Plc", "Cappa & D'Alberto Plc", "Hitech Construction Company Ltd."])
+
+@app.route('/admin')
+@auth.login_required
+def admin_dashboard():
+    """Serve the protected admin dashboard."""
+    # Construct the path to the frontend directory
+    frontend_dir = os.path.join(PROJECT_ROOT, 'frontend')
+    return send_from_directory(frontend_dir, 'admin_dashboard.html')
 
 @app.route('/api/reports/recent', methods=['GET'])
 def get_recent_reports():
@@ -231,7 +299,7 @@ def get_recent_reports():
         'damage_type': report.damage_type,
         'status': report.status,
         'created_at': report.created_at.strftime('%Y-%m-%d %H:%M:%S')
-    } for report in reports])
+    } for report in reports if report.damage_detected])
 
 @app.route('/api/uploads/<filename>')
 def uploaded_file(filename):
@@ -253,11 +321,11 @@ def test_ml():
     """Test ML pipeline functions"""
     try:
         # Test severity calculation
-        severity_low = calculate_severity(55, True)
-        severity_high = calculate_severity(95, True)
+        severity_low = calculate_severity(55, True) # from pipeline_budget
+        severity_high = calculate_severity(95, True) # from pipeline_budget
         
         # Test cost estimation
-        cost_low = estimate_repair_cost(3, 'Pothole')
+        cost_low = estimate_repair_cost(3, 'Pothole') # from pipeline_budget
         cost_high = estimate_repair_cost(9, 'Pothole')
         
         # Test optimization with dummy data
@@ -266,7 +334,7 @@ def test_ml():
             {'id': 2, 'severity': 5, 'cost': 30000, 'location': 'Test 2'},
             {'id': 3, 'severity': 9, 'cost': 80000, 'location': 'Test 3'},
         ]
-        opt_result = optimize_repair_budget(dummy_reports, 100000)
+        opt_result = optimize_repair_budget(dummy_reports, 100000) # from pipeline_budget
         
         return jsonify({
             'severity_calculation': {

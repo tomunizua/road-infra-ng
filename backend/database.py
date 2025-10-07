@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from datetime import datetime
 import os
 
@@ -21,23 +22,37 @@ class Report(db.Model):
     severity_score = db.Column(db.Integer, nullable=False)
     estimated_cost = db.Column(db.Integer, nullable=False)
     
+    # Admin-controlled fields
+    assigned_contractor = db.Column(db.String(100), nullable=True)
+    rejection_reason = db.Column(db.Text, nullable=True)
+    
     # Status tracking
-    status = db.Column(db.String(50), default='submitted', nullable=False)
-    # Possible statuses: submitted, under_review, scheduled, in_progress, completed
+    status = db.Column(db.String(50), default='under_review', nullable=False)
+    # Possible statuses: under_review, scheduled, completed, rejected
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def to_dict(self):
-        return {
-            'tracking_number': self.tracking_number,
-            'location': self.location,
-            'description': self.description,
-            'damage_type': self.damage_type,
-            'confidence': self.confidence,
-            'severity_score': self.severity_score,
-            'status': self.status,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
-        }
+    def to_dict(self, exclude=None):
+        if exclude is None:
+            exclude = []
+        
+        data = {}
+        for column in self.__table__.columns:
+            if column.name not in exclude:
+                value = getattr(self, column.name)
+                if isinstance(value, datetime):
+                    data[column.name] = value.isoformat()
+                else:
+                    data[column.name] = value
+        return data
+
+
+class ReportSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Report
+        include_relationships = True
+        load_instance = True
+        # Customize date format for output
+        datetimeformat = '%Y-%m-%d %H:%M:%S'

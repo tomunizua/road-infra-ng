@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadWatch - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .status-under_review { background-color: #e0f2fe; color: #0c4a6e; }
+        .status-scheduled { background-color: #dcfce7; color: #166534; }
+        .status-completed { background-color: #f3f4f6; color: #4b5563; }
+        .status-rejected { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <i class="fas fa-road text-2xl text-green-600 mr-2"></i>
+                    <span class="text-2xl font-bold text-green-600">RoadWatch</span>
+                    <span class="ml-2 text-gray-600">Admin Dashboard</span>
+                </div>
+                <div>
+                    <a href="citizen_portal.html" class="text-gray-700 hover:text-green-600 font-medium">
+                        <i class="fas fa-home mr-1"></i> Citizen Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Submitted Reports</h1>
+            <p class="text-gray-600 mt-2">A complete overview of all infrastructure reports submitted by citizens.</p>
+        </header>
+
+        <!-- Budget Optimization Section -->
+        <section class="mb-8 bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-600">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Budget Optimization</h2>
+            <div class="grid md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label for="budget" class="block text-sm font-medium text-gray-700">Enter Budget (NGN)</label>
+                    <input type="number" id="budget" name="budget" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 50000000">
+                </div>
+                <div>
+                    <button id="optimizeBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-cogs mr-2"></i>Run Optimization
+                    </button>
+                </div>
+                <div id="optimization-summary" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md" style="display: none;">
+                    <!-- Summary will be injected here -->
+                </div>
+            </div>
+            <div id="optimization-results" class="mt-4" style="display: none;">
+                <h3 class="font-bold text-lg mb-2">Scheduled Repairs:</h3>
+                <div class="max-h-60 overflow-y-auto border rounded-lg">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2">Tracking #</th>
+                                <th class="px-4 py-2">Location</th>
+                                <th class="px-4 py-2">Severity</th>
+                                <th class="px-4 py-2">Cost (NGN)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduled-reports-body">
+                            <!-- Scheduled reports will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Table -->
+        <div class="bg-white rounded-lg shadow-lg overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-600">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Image</th>
+                        <th scope="col" class="px-6 py-3">Tracking #</th>
+                        <th scope="col" class="px-6 py-3">Location</th>
+                        <th scope="col" class="px-6 py-3">Damage Type</th>
+                        <th scope="col" class="px-6 py-3">Confidence</th>
+                        <th scope="col" class="px-6 py-3">Severity</th>
+                        <th scope="col" class="px-6 py-3">Est. Cost</th>
+                        <th scope="col" class="px-6 py-3">Status</th>
+                        <th scope="col" class="px-6 py-3">Submitted At</th>
+                        <th scope="col" class="px-6 py-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reports-table-body">
+                    <!-- Loading state -->
+                    <tr>
+                        <td colspan="9" class="text-center py-12">
+                            <i class="fas fa-spinner fa-spin text-3xl text-green-600"></i>
+                            <p class="mt-2">Loading reports...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+        let contractors = [];
+
+        // Function to format status badges
+        function formatStatus(status) {
+            const statusText = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const statusClass = `status-${status.toLowerCase()}`;
+            return `<span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">${statusText}</span>`;
+        }
+
+        // Function to format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+        }
+
+        // Function to fetch contractors
+        async function fetchContractors() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/contractors`);
+                if (!response.ok) throw new Error('Failed to fetch contractors');
+                contractors = await response.json();
+            } catch (error) {
+                console.error("Failed to fetch contractors:", error);
+            }
+        }
+
+        // Function to fetch and display reports
+        async function fetchReports() {
+            const tableBody = document.getElementById('reports-table-body');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/reports`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const reports = await response.json();
+
+                // Clear loading state
+                tableBody.innerHTML = '';
+
+                if (reports.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="10" class="text-center py-12">No reports found.</td></tr>`;
+                    return;
+                }
+
+                reports.forEach(report => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-white border-b hover:bg-gray-50';
+                    row.id = `report-row-${report.id}`;
+
+                    const submittedDate = new Date(report.created_at).toLocaleString('en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+
+                    row.innerHTML = `
+                        <td class="p-4">
+                            <img src="${API_BASE_URL}/api/uploads/${report.image_filename}" alt="Report image" class="w-24 h-16 object-cover rounded-md">
+                        </td>
+                        <td class="px-6 py-4 font-mono text-xs">${report.tracking_number}</td>
+                        <td class="px-6 py-4">${report.location}</td>
+                        <td class="px-6 py-4">${report.damage_type}</td>
+                        <td class="px-6 py-4 font-medium">${report.confidence.toFixed(1)}%</td>
+                        <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-red-600 h-2.5 rounded-full" style="width: ${report.severity_score * 10}%"></div>
+                            </div>
+                            <span class="text-xs">${report.severity_score}/10</span>
+                        </td>
+                        <td class="px-6 py-4 font-medium">${formatCurrency(report.estimated_cost)}</td>
+                        <td class="px-6 py-4 status-cell">${formatStatus(report.status)}</td>
+                        <td class="px-6 py-4 text-xs">${submittedDate}</td>
+                        <td class="px-6 py-4 text-center actions-cell">
+                            ${generateActionButtons(report)}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Failed to fetch reports:", error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-12 text-red-600">
+                            <i class="fas fa-exclamation-triangle text-3xl"></i>
+                            <p class="mt-2">Failed to load reports. Please ensure the backend server is running.</p>
+                        </td>
+                    </tr>`;
+            }
+        }
+
+        function generateActionButtons(report) {
+            let buttons = '';
+            const baseButtonClasses = "px-3 py-1 text-xs font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2";
+
+            if (report.status === 'under_review') {
+                buttons = `
+                    <button onclick="scheduleReport(${report.id})" class="bg-blue-500 text-white hover:bg-blue-600 ${baseButtonClasses} focus:ring-blue-400">Schedule</button>
+                    <button onclick="rejectReport(${report.id})" class="ml-2 bg-red-500 text-white hover:bg-red-600 ${baseButtonClasses} focus:ring-red-400">Reject</button>
+                `;
+            } else if (report.status === 'scheduled') {
+                buttons = `
+                    <div class="text-xs text-gray-600">
+                        Assigned: <strong>${report.assigned_contractor || 'N/A'}</strong>
+                    </div>
+                    <button onclick="updateStatus(${report.id}, 'completed')" class="mt-1 bg-green-500 text-white hover:bg-green-600 ${baseButtonClasses} focus:ring-green-400">Complete</button>
+                `;
+            } else if (report.status === 'rejected') {
+                buttons = `<div class="text-xs text-red-700 italic" title="${report.rejection_reason || 'No reason provided'}">Rejected</div>`;
+            } else {
+                buttons = `<div class="text-xs text-gray-500 italic">No actions</div>`;
+            }
+            return buttons;
+        }
+
+        async function scheduleReport(reportId) {
+            if (contractors.length === 0) {
+                alert('Contractor list not available. Cannot schedule.');
+                return;
+            }
+            const contractor = prompt(`Assign a contractor for this repair:\n\nAvailable contractors:\n- ${contractors.join('\n- ')}`, contractors[0]);
+
+            if (contractor && contractors.includes(contractor)) {
+                await updateStatus(reportId, 'scheduled', { contractor });
+            } else if (contractor) {
+                alert("Invalid contractor selected. Please choose from the provided list.");
+            }
+        }
+
+        async function rejectReport(reportId) {
+            const reason = prompt("Please provide a reason for rejecting this report:");
+            if (reason !== null) { // Prompt was not cancelled
+                await updateStatus(reportId, 'rejected', { reason: reason || 'No reason provided.' });
+            }
+        }
+
+        async function updateStatus(reportId, newStatus, payload = {}) {
+            const body = { status: newStatus, ...payload };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/reports/${reportId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const updatedReport = await response.json();
+
+                // Update the specific row in the table without a full refresh
+                const row = document.getElementById(`report-row-${reportId}`);
+                if (row) {
+                    const statusCell = row.querySelector('.status-cell');
+                    const actionsCell = row.querySelector('.actions-cell');
+
+                    if (statusCell) statusCell.innerHTML = formatStatus(updatedReport.status);
+                    if (actionsCell) actionsCell.innerHTML = generateActionButtons(updatedReport);
+                }
+
+            } catch (error) {
+                console.error(`Failed to update status for report ${reportId}:`, error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function initializeDashboard() {
+            await fetchContractors();
+            await fetchReports();
+        }
+
+        // Function to run budget optimization
+        async function runOptimization() {
+            const budgetInput = document.getElementById('budget');
+            const budget = budgetInput.value ? parseFloat(budgetInput.value) : 0;
+
+            if (budget <= 0) {
+                alert("Please enter a valid budget greater than zero.");
+                return;
+            }
+
+            const optimizeBtn = document.getElementById('optimizeBtn');
+            optimizeBtn.disabled = true;
+            optimizeBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Optimizing...`;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/optimize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ budget: budget })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const schedule = await response.json();
+
+                // Display summary
+                const summaryDiv = document.getElementById('optimization-summary');
+                summaryDiv.innerHTML = `
+                    <strong>Repairs:</strong> ${schedule.repairs_count} | 
+                    <strong>Cost:</strong> ${formatCurrency(schedule.total_cost)} | 
+                    <strong>Utilization:</strong> ${schedule.budget_utilization}%
+                `;
+                summaryDiv.style.display = 'block';
+
+                // Display scheduled reports
+                const scheduledBody = document.getElementById('scheduled-reports-body');
+                scheduledBody.innerHTML = '';
+                schedule.scheduled_reports.forEach(report => {
+                    const row = `<tr>
+                        <td class="px-4 py-2 font-mono">${report.tracking_number}</td>
+                        <td class="px-4 py-2">${report.location}</td>
+                        <td class="px-4 py-2">${report.severity_score}/10</td>
+                        <td class="px-4 py-2">${formatCurrency(report.estimated_cost)}</td>
+                    </tr>`;
+                    scheduledBody.innerHTML += row;
+                });
+                document.getElementById('optimization-results').style.display = 'block';
+
+                // Refresh the main reports table to show updated statuses
+                fetchReports();
+
+            } catch (error) {
+                console.error("Optimization failed:", error);
+                alert("Optimization failed. Please check the console for details.");
+            } finally {
+                optimizeBtn.disabled = false;
+                optimizeBtn.innerHTML = `<i class="fas fa-cogs mr-2"></i>Run Optimization`;
+            }
+        }
+
+        // Load reports when the page is ready
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
+        document.getElementById('optimizeBtn').addEventListener('click', runOptimization);
+    </script>
+</body>
+</html>
