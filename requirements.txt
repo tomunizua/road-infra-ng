@@ -1,0 +1,10 @@
+Flask
+Flask-Cors
+Flask-HTTPAuth
+Flask-SQLAlchemy
+Flask-Marshmallow
+marshmallow-sqlalchemy
+tensorflow
+Pillow
+numpy
+pulp
