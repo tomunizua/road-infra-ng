@@ -110,7 +110,7 @@ The application follows a simple client-server architecture.
 ### App Interfaces
 
 **Citizen Reporting Portal**
-![Citizen Portal Screenshot1](citizen_portal1.png)
+![Citizen Portal Screenshot1](citizen_portal.png)
 ![Citizen Portal Screenshot2](citizen_portal2.png)
 
 **Admin Dashboard**
