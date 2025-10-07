@@ -110,11 +110,11 @@ The application follows a simple client-server architecture.
 ### App Interfaces
 
 **Citizen Reporting Portal**
-![Citizen Portal Screenshot1](https://github.com/tomunizua/road-infra-ng.git/raw/main/docs/images/citizen_portal1.png)
-![Citizen Portal Screenshot2](https://github.com/tomunizua/road-infra-ng.git/raw/main/docs/images/citizen_portal2.png)
+![Citizen Portal Screenshot1](citizen_portal1.png)
+![Citizen Portal Screenshot2](citizen_portal2.png)
 
 **Admin Dashboard**
-!Admin Dashboard Screenshot(https://github.com/tomunizua/road-infra-ng.git/raw/main/docs/images/admin_dash.png)
+![Admin Dashboard Screenshot](admin_dash.png)
 
 ---
 
