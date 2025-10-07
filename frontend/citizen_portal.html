@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadWatch Nigeria - Report Infrastructure Issues</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #1a5d1a 0%, #0d3d0d 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+        .hero-image {
+            background: url('images/hero-background.jpeg') center/cover;
+            position: relative;
+        }
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(26, 93, 26, 0.9) 0%, rgba(13, 61, 13, 0.9) 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <i class="fas fa-road text-2xl text-green-600 mr-2"></i>
+                    <span class="text-2xl font-bold text-green-600">RoadWatch</span>
+                    <span class="ml-2 text-gray-600 hidden sm:block">Nigeria</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#home" class="text-gray-700 hover:text-green-600 font-medium">Home</a>
+                    <a href="#report" class="text-gray-700 hover:text-green-600 font-medium">Report Issue</a>
+                    <a href="#track" class="text-gray-700 hover:text-green-600 font-medium">Track Report</a>
+                    <a href="#about" class="text-gray-700 hover:text-green-600 font-medium">About</a>
+                </div>
+                <button class="md:hidden text-gray-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Background Image -->
+    <section id="home" class="hero-image text-white py-32 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-4xl mx-auto">
+                <div>
+                    <h1 class="text-4xl md:text-6xl font-bold mb-6">Report Road Damage.<br>Get It Fixed.</h1>
+                    <p class="text-xl md:text-2xl mb-8 text-green-100">AI-powered infrastructure reporting for Nigerian communities</p>
+                    <a href="#report" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg text-lg inline-block transition duration-300">
+                        Report an Issue Now
+                    </a>
+                </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-12">How It Works</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center feature-card p-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-camera text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">1. Take a Photo</h3>
+                    <p class="text-gray-600">Snap a picture of the damaged road, broken traffic light, or faulty street sign</p>
+                </div>
+                <div class="text-center feature-card p-6">
+                    <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-brain text-3xl text-orange-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">2. AI Analysis</h3>
+                    <p class="text-gray-600">Our system automatically detects damage type and severity using machine learning</p>
+                </div>
+                <div class="text-center feature-card p-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">3. Get Action</h3>
+                    <p class="text-gray-600">Government receives prioritized reports and schedules repairs based on budget</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Section with People Image -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <img src="images/community.jpg" alt="Nigerian community" class="rounded-lg shadow-lg">
+                </div>
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">Built for Nigerian Communities</h2>
+                    <p class="text-gray-600 mb-4">RoadWatch Nigeria empowers citizens to actively participate in infrastructure maintenance. Every report contributes to safer roads and better-managed public resources.</p>
+                    <div class="flex items-start mb-4">
+                        <i class="fas fa-shield-alt text-green-600 text-2xl mr-4 mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Secure & Anonymous</h3>
+                            <p class="text-gray-600">Your personal information is protected</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fas fa-users text-green-600 text-2xl mr-4 mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Community Driven</h3>
+                            <p class="text-gray-600">Join thousands of Nigerians making a difference</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Reports Section -->
+<section class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-12">Recent Reports</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Sample Report 1 -->
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+                <div class="flex items-start justify-between mb-3">
+                    <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-1 rounded">Pothole</span>
+                    <span class="text-sm text-gray-500">2 hours ago</span>
+                </div>
+                <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Lekki Phase 1, Lagos</p>
+                <p class="text-sm text-gray-600">Large pothole on Admiralty Way causing traffic...</p>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Under Review</span>
+                </div>
+            </div>
+
+            <!-- Sample Report 2 -->
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-start justify-between mb-3">
+                    <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded">Traffic Light</span>
+                    <span class="text-sm text-gray-500">5 hours ago</span>
+                </div>
+                <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Victoria Island, Lagos</p>
+                <p class="text-sm text-gray-600">Traffic light not functioning at Adeola Odeku...</p>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Scheduled</span>
+                </div>
+            </div>
+
+            <!-- Sample Report 3 -->
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gray-500">
+                <div class="flex items-start justify-between mb-3">
+                    <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded">Street Sign</span>
+                    <span class="text-sm text-gray-500">1 day ago</span>
+                </div>
+                <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Ikeja GRA, Lagos</p>
+                <p class="text-sm text-gray-600">Damaged stop sign at Allen Avenue junction...</p>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Completed</span>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-8">
+            <button class="text-green-600 hover:text-green-700 font-semibold">
+                View All Reports <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+    <!-- Report Form Section -->
+    <section id="report" class="py-16 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">Submit a Report</h2>
+            <div class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <form id="reportForm">
+                    <!-- Photo Upload -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-bold mb-2">
+                            <i class="fas fa-image text-green-600 mr-2"></i>Upload Photo <span class="text-red-500">*</span>
+                        </label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition" onclick="document.getElementById('photoInput').click()">
+                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-600">Click to upload or drag and drop</p>
+                            <p class="text-sm text-gray-500 mt-2">JPG, PNG up to 10MB</p>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" class="hidden" required>
+                        <img id="photoPreview" class="mt-4 max-w-full h-auto rounded-lg hidden">
+                    </div>
+
+                    <!-- Location -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-bold mb-2">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Location <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="location" placeholder="e.g., Admiralty Way, Lekki Phase 1, Lagos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                        <p class="text-sm text-gray-500 mt-1">Include street name, area, and city</p>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-bold mb-2">
+                            <i class="fas fa-comment-alt text-green-600 mr-2"></i>Description <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="description" rows="4" placeholder="Describe the issue: What happened? When did you first notice it? How severe is it?" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required></textarea>
+                    </div>
+
+                    <!-- Contact (Optional) -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-bold mb-2">
+                            <i class="fas fa-phone text-green-600 mr-2"></i>Phone Number (Optional)
+                        </label>
+                        <input type="tel" id="phone" placeholder="080XXXXXXXX" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <p class="text-sm text-gray-500 mt-1">We'll send you updates on your report</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-paper-plane mr-2"></i>Submit Report
+                    </button>
+                </form>
+
+                <!-- Success Message (Hidden initially) -->
+                <div id="successMessage" class="hidden mt-6 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 text-2xl mr-3"></i>
+                        <div>
+                            <p class="text-green-800 font-bold">Report Submitted Successfully!</p>
+                            <p class="text-green-700 mt-2">Your tracking number: <span id="trackingNumber" class="font-mono font-bold"></span></p>
+                            <p class="text-green-600 text-sm mt-2">Save this number to track your report's progress</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Track Report Section -->
+    <section id="track" class="py-16 bg-gray-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">Track Your Report</h2>
+            <div class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-bold mb-2">
+                        <i class="fas fa-search text-green-600 mr-2"></i>Enter Tracking Number
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="trackingInput" placeholder="e.g., RW-2024-001234" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <button onclick="trackReport()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 rounded-lg transition duration-300">
+                            Track
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Display (Hidden initially) -->
+                <div id="statusDisplay" class="hidden mt-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-tasks text-green-600 mr-2"></i>Report Status
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-800">Submitted</p>
+                                <p class="text-sm text-gray-600">Oct 5, 2024 - 11:30 AM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-800">Under Review</p>
+                                <p class="text-sm text-gray-600">AI analysis complete</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center opacity-50">
+                            <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-800">Scheduled for Repair</p>
+                                <p class="text-sm text-gray-600">Pending</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center opacity-50">
+                            <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white">
+                                <i class="fas fa-flag-checkered"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-800">Completed</p>
+                                <p class="text-sm text-gray-600">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="font-bold mb-4 flex items-center">
+                        <i class="fas fa-road text-green-500 mr-2"></i>RoadWatch Nigeria
+                    </h3>
+                    <p class="text-gray-400 text-sm">AI-powered infrastructure reporting for better Nigerian communities</p>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="#report" class="hover:text-green-500">Report Issue</a></li>
+                        <li><a href="#track" class="hover:text-green-500">Track Report</a></li>
+                        <li><a href="#about" class="hover:text-green-500">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-4">Contact</h3>
+                    <p class="text-gray-400 text-sm">
+                        <i class="fas fa-envelope mr-2"></i>info@roadwatch.ng<br>
+                        <i class="fas fa-phone mr-2 mt-2 inline-block"></i>+234 800 ROADWATCH
+                    </p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-400 text-sm">© 2024 RoadWatch Nigeria. Built for ALU Software Engineering Capstone.</p>
+                <p class="text-gray-500 mt-2 text-sm">Powered by AI | Serving Nigerian Communities</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Photo preview
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+       // Form submission
+document.getElementById('reportForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('image', document.getElementById('photoInput').files[0]);
+    formData.append('location', document.getElementById('location').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('phone', document.getElementById('phone').value);
+
+    try {
+        const response = await fetch('http://localhost:5000/api/predict', {
+            method: 'POST',
+            body: formData
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        const result = await response.json();
+        console.log('Result:', result);
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Server error');
+        }
+        
+        // Show success message
+        document.getElementById('trackingNumber').textContent = result.tracking_number;
+        document.getElementById('successMessage').classList.remove('hidden');
+        
+        // Reset form
+        this.reset();
+        document.getElementById('photoPreview').classList.add('hidden');
+        
+        // Scroll to success message
+        document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+    } catch (error) {
+        console.error('Full error:', error);
+        alert('Error submitting report: ' + error.message);
+    }
+});
+
+        // Track report function
+async function trackReport() {
+    const trackingNum = document.getElementById('trackingInput').value;
+    
+    if (!trackingNum) {
+        alert('Please enter a tracking number');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`http://localhost:5000/api/track/${trackingNum}`);
+        
+        if (!response.ok) {
+            alert('Report not found. Please check your tracking number.');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        // Update status display with real data
+        document.getElementById('statusDisplay').innerHTML = `
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-tasks text-green-600 mr-2"></i>Report Status
+            </h3>
+            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                <p class="text-sm text-gray-600">Location: ${data.location}</p>
+                <p class="text-sm text-gray-600">Damage Type: ${data.damage_type}</p>
+                <p class="text-sm text-gray-600">Severity: ${data.severity_score}/10</p>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="font-bold text-gray-800">Submitted</p>
+                        <p class="text-sm text-gray-600">${data.created_at}</p>
+                    </div>
+                </div>
+                <div class="flex items-center ${data.status === 'under_review' ? '' : 'opacity-50'}">
+                    <div class="w-10 h-10 ${data.status === 'under_review' ? 'bg-blue-500' : 'bg-gray-300'} rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-spinner ${data.status === 'under_review' ? 'fa-spin' : ''}"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="font-bold text-gray-800">Under Review</p>
+                        <p class="text-sm text-gray-600">AI analysis complete</p>
+                    </div>
+                </div>
+                <div class="flex items-center ${data.status === 'scheduled' ? '' : 'opacity-50'}">
+                    <div class="w-10 h-10 ${data.status === 'scheduled' ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="font-bold text-gray-800">Scheduled for Repair</p>
+                        <p class="text-sm text-gray-600">${data.status === 'scheduled' ? 'Repair scheduled' : 'Pending'}</p>
+                    </div>
+                </div>
+                <div class="flex items-center ${data.status === 'completed' ? '' : 'opacity-50'}">
+                    <div class="w-10 h-10 ${data.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="font-bold text-gray-800">Completed</p>
+                        <p class="text-sm text-gray-600">${data.status === 'completed' ? 'Repair completed' : 'Pending'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('statusDisplay').classList.remove('hidden');
+    } catch (error) {
+        alert('Error tracking report: ' + error.message);
+    }
+}
+    </script>
+</body>
+</html>
