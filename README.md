@@ -11,6 +11,7 @@ RoadWatch is a web application designed to empower Nigerian citizens to report r
 In many urban and rural areas, damaged road infrastructure like potholes poses significant risks to drivers and pedestrians. The process of reporting these issues is often slow and inefficient. RoadWatch tackles this problem by providing a simple, accessible platform for citizens to report damage using just a photo.
 
 Our system uses a machine learning model to automatically detect the presence of damage, estimate its severity, and calculate a preliminary repair cost. This data is fed into a secure admin dashboard where officials can view all submitted reports, manage their status, and use a budget optimization tool to schedule repairs in the most impactful way possible.
+Repo link: https://github.com/tomunizua/road-infra-ng.git
 
 ## ✨ Key Features
 
