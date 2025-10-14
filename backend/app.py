@@ -1,13 +1,13 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 from PIL import Image
 import numpy as np
 import os
 from datetime import datetime
 from database import db, Report, ReportSchema
-from ml_pipeline import calculate_severity, estimate_repair_cost, optimize_repair_budget, generate_repair_schedule, MONTHLY_BUDGET
+from pipeline import calculate_severity, estimate_repair_cost, optimize_repair_budget, generate_repair_schedule, MONTHLY_BUDGET
 import traceback
 
 app = Flask(__name__)
@@ -28,12 +28,12 @@ db.init_app(app)
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Explicit CORS configuration
+# SIMPLIFIED CORS - Allow all origins for development
 CORS(app, resources={
     r"/api/*": {
-        "origins": "*",  # Allow all origins for development
-        "methods": ["GET", "POST", "PATCH", "OPTIONS"],  # Add PATCH for status updates
-        "allow_headers": ["Content-Type", "Authorization"]  # Add common headers
+        "origins": "*",  # Allow all origins
+        "methods": ["GET", "POST", "PATCH", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
@@ -80,12 +80,15 @@ def generate_tracking_number():
 
 @app.route('/api/predict', methods=['POST', 'OPTIONS'])
 def predict():
-    # Handle preflight request
+    # Handle preflight request - SIMPLIFIED
     if request.method == 'OPTIONS':
-        return '', 204
+        return jsonify({'status': 'ok'}), 200
         
     try:
         print("\n=== NEW PREDICTION REQUEST ===")
+        print(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
+        print(f"Request method: {request.method}")
+        print(f"Request headers: {dict(request.headers)}")
         
         # Check if model is loaded
         if model is None:
@@ -126,11 +129,11 @@ def predict():
         print(f"Is pothole: {is_pothole}, Confidence: {confidence}")
         
         # CALCULATE SEVERITY using ML confidence
-        severity = calculate_severity(confidence * 100, is_pothole) # Using pipeline_budget
+        severity = calculate_severity(confidence * 100, is_pothole)
         print(f"Severity: {severity}")
         
         # ESTIMATE COST based on severity
-        cost = estimate_repair_cost(severity, 'Pothole') # Using pipeline_budget
+        cost = estimate_repair_cost(severity, 'Pothole')
         print(f"Estimated cost: ₦{cost:,}")
         
         # Create database record
@@ -161,17 +164,21 @@ def predict():
         }
         
         print("Success! Report created:", result)
-        return jsonify(result)
+        response = jsonify(result)
+        return response
         
     except Exception as e:
         print(f"ERROR in predict: {str(e)}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/reports/<int:report_id>/status', methods=['PATCH'])
+@app.route('/api/reports/<int:report_id>/status', methods=['PATCH', 'OPTIONS'])
 @auth.login_required
 def update_report_status(report_id):
     """Manually update a report's status, assign contractor, or reject."""
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+        
     report = Report.query.get_or_404(report_id)
     data = request.get_json()
 
@@ -189,13 +196,13 @@ def update_report_status(report_id):
         if not contractor:
             return jsonify({'error': 'A valid contractor is required for scheduling'}), 400
         report.assigned_contractor = contractor
-        report.rejection_reason = None # Clear any previous rejection reason
+        report.rejection_reason = None
         print(f"Assigned contractor: {contractor}")
 
     elif new_status == 'rejected':
         reason = data.get('reason', 'No reason provided.')
         report.rejection_reason = reason
-        report.assigned_contractor = None # Clear contractor
+        report.assigned_contractor = None
         print(f"Rejection reason: {reason}")
 
     db.session.commit()
@@ -210,7 +217,7 @@ def optimize_budget():
     Returns optimal repair schedule
     """
     if request.method == 'OPTIONS':
-        return '', 204
+        return jsonify({'status': 'ok'}), 200
         
     try:
         print("\n=== OPTIMIZATION REQUEST ===")
@@ -248,7 +255,6 @@ def optimize_budget():
             ).update({'status': 'scheduled'}, synchronize_session=False)
             db.session.commit()
             print(f"Updated status to 'scheduled' for {len(scheduled_ids)} reports.")
-
         
         return jsonify(schedule)
         
@@ -268,25 +274,42 @@ def track_report(tracking_number):
     report_schema = ReportSchema()
     return jsonify(report_schema.dump(report))
 
-@app.route('/api/reports', methods=['GET'])
+@app.route('/api/reports', methods=['GET', 'OPTIONS'])
 @auth.login_required
 def get_all_reports():
     """Get all reports (for admin dashboard)"""
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+        
     reports = Report.query.order_by(Report.created_at.desc()).all()
     report_schema = ReportSchema(many=True)
     return jsonify(report_schema.dump(reports))
 
-@app.route('/api/contractors', methods=['GET'])
+@app.route('/api/contractors', methods=['GET', 'OPTIONS'])
 @auth.login_required
 def get_contractors():
     """Get the list of available contractors."""
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+        
     return jsonify(["Julius Berger Nigeria Plc", "Cappa & D'Alberto Plc", "Hitech Construction Company Ltd."])
+
+@app.route('/')
+def index():
+    """Serve the main citizen portal."""
+    frontend_dir = os.path.join(PROJECT_ROOT, 'frontend')
+    return send_from_directory(frontend_dir, 'citizen_portal.html')
+
+@app.route('/<path:filename>')
+def serve_frontend(filename):
+    """Serve any file from the frontend directory."""
+    frontend_dir = os.path.join(PROJECT_ROOT, 'frontend')
+    return send_from_directory(frontend_dir, filename)
 
 @app.route('/admin')
 @auth.login_required
 def admin_dashboard():
     """Serve the protected admin dashboard."""
-    # Construct the path to the frontend directory
     frontend_dir = os.path.join(PROJECT_ROOT, 'frontend')
     return send_from_directory(frontend_dir, 'admin_dashboard.html')
 
@@ -321,11 +344,11 @@ def test_ml():
     """Test ML pipeline functions"""
     try:
         # Test severity calculation
-        severity_low = calculate_severity(55, True) # from pipeline_budget
-        severity_high = calculate_severity(95, True) # from pipeline_budget
+        severity_low = calculate_severity(55, True)
+        severity_high = calculate_severity(95, True)
         
         # Test cost estimation
-        cost_low = estimate_repair_cost(3, 'Pothole') # from pipeline_budget
+        cost_low = estimate_repair_cost(3, 'Pothole')
         cost_high = estimate_repair_cost(9, 'Pothole')
         
         # Test optimization with dummy data
@@ -334,7 +357,7 @@ def test_ml():
             {'id': 2, 'severity': 5, 'cost': 30000, 'location': 'Test 2'},
             {'id': 3, 'severity': 9, 'cost': 80000, 'location': 'Test 3'},
         ]
-        opt_result = optimize_repair_budget(dummy_reports, 100000) # from pipeline_budget
+        opt_result = optimize_repair_budget(dummy_reports, 100000)
         
         return jsonify({
             'severity_calculation': {

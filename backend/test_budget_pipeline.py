@@ -3,7 +3,7 @@ Test script for the enhanced but focused budget pipeline.
 Run from the backend directory: python test_budget_pipeline.py
 """
 
-from backend.ml_pipeline import (
+from pipeline import (
     calculate_severity,
     estimate_repair_cost,
     optimize_repair_budget,

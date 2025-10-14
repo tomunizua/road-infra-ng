@@ -142,7 +142,7 @@ While the project currently runs in a development environment, a production depl
 
 ## 🎥 Video Demo
 
-*(link to video demonstration)*
+*https://drive.google.com/file/d/10Ws0XObBgsf1iix94AFz-xmEkm-5Vi7e/view?usp=sharing*
 
 Watch a video demonstration of RoadWatch Nigeria here
 

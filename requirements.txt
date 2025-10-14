@@ -8,3 +8,4 @@ tensorflow
 Pillow
 numpy
 pulp
+scikit-learn
