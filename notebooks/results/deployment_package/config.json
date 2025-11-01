@@ -1,0 +1,37 @@
+{
+    "model_info": {
+        "model_type": "YOLOv8 (yolov8s)",
+        "input_size": [
+            640,
+            640
+        ],
+        "num_classes": 3,
+        "class_names": {
+            "0": "pothole",
+            "1": "longitudinal_crack",
+            "2": "lateral_crack"
+        },
+        "training_date": "2025-10-28T09:03:12.676056"
+    },
+    "inference_config": {
+        "confidence_threshold": 0.5,
+        "iou_threshold": 0.5,
+        "max_detections": 100
+    },
+    "severity_weights": {
+        "pothole": 3.0,
+        "alligator_crack": 2.5,
+        "longitudinal_crack": 1.5,
+        "lateral_crack": 1.5,
+        "crack": 2.0,
+        "manhole": 1.0
+    },
+    "performance_metrics": {
+        "mAP50": 0.4170775460753122,
+        "mAP50-95": 0.18355572540669052,
+        "precision": 0.42758065822948627,
+        "recall": 0.4124168514412417,
+        "f1_score": 0.4198618847651174,
+        "accuracy": 0.4170775460753122
+    }
+}

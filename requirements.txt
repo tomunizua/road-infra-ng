@@ -9,3 +9,12 @@ Pillow
 numpy
 pulp
 scikit-learn
+kaggle
+ultralytics
+optuna
+wandb
+plotly
+matplotlib
+seaborn
+opencv-python
+pandas

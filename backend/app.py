@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)  # Go up one level to project root
 
 # Configure database
-DB_PATH = os.path.join(BASE_DIR, 'roadwatch.db')
+DB_PATH = os.path.join(PROJECT_ROOT, 'road_reports.db')  # Use root-level database
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')

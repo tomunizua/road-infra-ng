@@ -1,0 +1,123 @@
+{
+  "model_path": "runs/detect/road_damage_yolov8_20251025_121448/weights/best.pt",
+  "evaluation_set": "test",
+  "metrics": {
+    "mAP50": 0.4170775460753122,
+    "mAP50-95": 0.18355572540669052,
+    "precision": 0.42758065822948627,
+    "recall": 0.4124168514412417,
+    "f1_score": 0.4198618847651174
+  },
+  "class_metrics": [
+    {
+      "class": "pothole",
+      "precision": 0.34665231101605964,
+      "recall": 0.09090909090909091,
+      "f1_score": 0.14404308203307292,
+      "mAP50": 0.14794285077914193,
+      "mAP50-95": 0.05141995731308589
+    },
+    {
+      "class": "longitudinal_crack",
+      "precision": 0.2982964909359688,
+      "recall": 0.14634146341463414,
+      "f1_score": 0.19635366071605637,
+      "mAP50": 0.23114693030393757,
+      "mAP50-95": 0.08544253542528445
+    },
+    {
+      "class": "lateral_crack",
+      "precision": 0.6377931727364303,
+      "recall": 1.0,
+      "f1_score": 0.7788445859385326,
+      "mAP50": 0.8721428571428572,
+      "mAP50-95": 0.4138046834817013
+    }
+  ],
+  "classification_report": {
+    "per_class_metrics": [
+      {
+        "class": "pothole",
+        "precision": 0.34665231101605964,
+        "recall": 0.09090909090909091,
+        "f1_score": 0.14404308203307292,
+        "mAP50": 0.14794285077914193,
+        "mAP50-95": 0.05141995731308589
+      },
+      {
+        "class": "longitudinal_crack",
+        "precision": 0.2982964909359688,
+        "recall": 0.14634146341463414,
+        "f1_score": 0.19635366071605637,
+        "mAP50": 0.23114693030393757,
+        "mAP50-95": 0.08544253542528445
+      },
+      {
+        "class": "lateral_crack",
+        "precision": 0.6377931727364303,
+        "recall": 1.0,
+        "f1_score": 0.7788445859385326,
+        "mAP50": 0.8721428571428572,
+        "mAP50-95": 0.4138046834817013
+      }
+    ],
+    "macro_avg": {
+      "precision": 0.42758065822948627,
+      "recall": 0.4124168514412417,
+      "f1_score": 0.3730804428958873,
+      "mAP50": 0.4170775460753122,
+      "mAP50_95": 0.18355572540669052
+    },
+    "weighted_avg": {
+      "precision": 0.42758065822948627,
+      "recall": 0.4124168514412417,
+      "f1_score": 0.3730804428958873,
+      "mAP50": 0.4170775460753122,
+      "mAP50_95": 0.18355572540669052
+    },
+    "loss_metrics": {
+      "final_train_losses": {
+        "box_loss": "N/A",
+        "obj_loss": "N/A",
+        "cls_loss": "N/A"
+      },
+      "final_val_losses": {
+        "box_loss": "N/A",
+        "obj_loss": "N/A",
+        "cls_loss": "N/A"
+      }
+    },
+    "accuracy_metrics": {
+      "mAP50_percent": 41.70775460753122,
+      "mAP50_95_percent": 18.35557254066905,
+      "precision_percent": 42.75806582294862,
+      "recall_percent": 41.24168514412417,
+      "f1_score_percent": 41.986188476511735
+    },
+    "overall_metrics": {
+      "mAP50": 0.4170775460753122,
+      "mAP50-95": 0.18355572540669052,
+      "precision": 0.42758065822948627,
+      "recall": 0.4124168514412417,
+      "f1_score": 0.4198618847651174
+    },
+    "performance_assessment": "POOR detection accuracy"
+  },
+  "performance_level": "NEEDS IMPROVEMENT",
+  "training_config": {
+    "epochs": 50,
+    "batch_size": 16,
+    "image_size": 640,
+    "learning_rate": 0.01,
+    "focal_loss": true
+  },
+  "dataset_info": {
+    "total_images": null,
+    "class_distribution": {
+      "2": 957,
+      "0": 1261,
+      "1": 2519
+    },
+    "augmentation": false
+  }
+}

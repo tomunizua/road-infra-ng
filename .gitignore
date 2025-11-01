@@ -9,3 +9,5 @@ venv/
 instance/
 uploads/
 roadwatch.db
+road_damage_data/
+road_reports.db
