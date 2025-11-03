@@ -160,6 +160,18 @@
             transform-origin: 50% 50%;
         }
         
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+        
+        /* FORCE SUCCESS MESSAGE TO STAY VISIBLE */
+        #successMessage:not(.hidden-by-user) {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -630,7 +642,7 @@
                         </div>
                         <div class="ml-4">
                             <h3 class="text-lg font-semibold text-green-800 mb-2">Report Submitted Successfully!</h3>
-                            <p class="text-green-700 mb-2">Your tracking number is: <span id="trackingNumber" class="font-mono font-bold bg-white px-2 py-1 rounded"></span></p>
+                            <p class="text-green-700 mb-2">Your tracking number is: <span id="trackingNumber" class="font-mono font-bold bg-white text-gray-900 px-2 py-1 rounded"></span></p>
                             <p class="text-sm text-green-600">
                                 <i class="fas fa-info-circle mr-1"></i>You'll receive SMS updates if you provided a phone number. You can also track your report below.
                             </p>
@@ -830,11 +842,18 @@
             menu.classList.toggle('active');
         }
 
-        // Close mobile menu when clicking outside
+        // Close mobile menu when clicking outside or on a link
         document.addEventListener('click', function(e) {
             const menu = document.getElementById('mobileMenu');
-            const button = e.target.closest('button');
-            if (!menu.contains(e.target) && !button) {
+            const hamburger = document.querySelector('button[onclick="toggleMobileMenu()"]');
+            
+            // Close if clicking outside menu and hamburger
+            if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+            
+            // Close if clicking a link inside menu
+            if (e.target.tagName === 'A' && menu.contains(e.target)) {
                 menu.classList.remove('active');
             }
         });
@@ -858,6 +877,49 @@
         // Global variables for camera and location
         let currentStream = null;
         let gpsCoordinates = null;
+
+        // ===== RESTORE TRACKING NUMBER FROM STORAGE ON PAGE LOAD =====
+        function restoreTrackingNumberFromStorage() {
+            const savedTrackingNumber = localStorage.getItem('lastTrackingNumber');
+            const savedTime = localStorage.getItem('lastTrackingNumberTime');
+            
+            if (savedTrackingNumber && savedTime) {
+                const timeAgo = Date.now() - parseInt(savedTime);
+                // Show tracking number for up to 24 hours
+                if (timeAgo < 24 * 60 * 60 * 1000) {
+                    const successMessage = document.getElementById('successMessage');
+                    const trackingNumberElement = document.getElementById('trackingNumber');
+                    
+                    trackingNumberElement.textContent = savedTrackingNumber;
+                    
+                    // Show success message
+                    successMessage.classList.remove('hidden');
+                    successMessage.style.display = 'block';
+                    successMessage.style.visibility = 'visible';
+                    successMessage.style.opacity = '1';
+                    
+                    console.log('✅ Restored tracking number from storage:', savedTrackingNumber);
+                    
+                    // Scroll to it after a short delay
+                    setTimeout(() => {
+                        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                } else {
+                    // Clear if older than 24 hours
+                    localStorage.removeItem('lastTrackingNumber');
+                    localStorage.removeItem('lastTrackingNumberTime');
+                }
+            }
+        }
+        
+        // Restore on page load
+        document.addEventListener('DOMContentLoaded', restoreTrackingNumberFromStorage);
+        // Also try immediately in case DOM is already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreTrackingNumberFromStorage);
+        } else {
+            restoreTrackingNumberFromStorage();
+        }
 
         // Camera functionality
         document.getElementById('cameraBtn').addEventListener('click', async function() {
@@ -1028,44 +1090,46 @@
 
             const submitButton = e.target.querySelector('button[type="submit"]');
             const spinner = document.getElementById('submitSpinner');
+            const form = this;
 
             // Show loading state
             submitButton.disabled = true;
             spinner.classList.remove('hidden');
 
-            // Handle photo upload
-            const photoFile = document.getElementById('photoInput').files[0];
-            let photoBase64 = null;
-            
-            if (photoFile) {
-                photoBase64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
+            try {
+                // Combine state and location
+                const state = document.getElementById('state').value;
+                const location = document.getElementById('location').value;
+                const fullLocation = state ? `${location}, ${state}` : location;
+                
+                // Get image file and convert to base64
+                const photoFile = document.getElementById('photoInput').files[0];
+                if (!photoFile) {
+                    throw new Error('Please select a photo');
+                }
+
+                // Convert image to base64
+                const reader = new FileReader();
+                const photoBase64 = await new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
                     reader.readAsDataURL(photoFile);
                 });
-            }
-            
-            // Combine state and location
-            const state = document.getElementById('state').value;
-            const location = document.getElementById('location').value;
-            const fullLocation = state ? `${location}, ${state}` : location;
-            
-            // Prepare request data as JSON
-            const requestData = {
-                location: fullLocation,
-                description: document.getElementById('description').value,
-                contact: document.getElementById('phone').value,
-                gps: gpsCoordinates ? JSON.stringify(gpsCoordinates) : null,
-                photo: photoBase64
-            };
 
-            try {
+                // Prepare JSON payload for integrated_backend
+                const payload = {
+                    location: fullLocation,
+                    description: document.getElementById('description').value,
+                    contact: document.getElementById('phone').value,
+                    photo: photoBase64
+                };
+
                 const response = await fetch('http://localhost:5000/api/submit-report', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestData)
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
@@ -1074,69 +1138,123 @@
                     throw new Error(result.error || 'Server error');
                 }
                 
-                // Show success message with animation and preserve it
-                document.getElementById('trackingNumber').textContent = result.tracking_number;
+                console.log('✅ Report submitted successfully:', result);
+                console.log('📋 Full response object:', JSON.stringify(result, null, 2));
+                console.log('🔢 Tracking number value:', result.tracking_number);
+                console.log('🔢 Type of tracking_number:', typeof result.tracking_number);
+                
+                // Show success message with tracking number
+                const trackingNumberElement = document.getElementById('trackingNumber');
+                console.log('📍 Tracking number element found:', trackingNumberElement);
+                console.log('📍 Element ID:', trackingNumberElement?.id);
+                
+                if (result.tracking_number) {
+                    trackingNumberElement.textContent = result.tracking_number;
+                    console.log('✅ Setting tracking number to:', result.tracking_number);
+                    console.log('✅ Element text content is now:', trackingNumberElement.textContent);
+                    
+                    // ===== SAVE TRACKING NUMBER TO LOCALSTORAGE =====
+                    localStorage.setItem('lastTrackingNumber', result.tracking_number);
+                    localStorage.setItem('lastTrackingNumberTime', Date.now().toString());
+                    console.log('💾 Saved tracking number to localStorage');
+                } else {
+                    console.error('❌ No tracking_number in response!');
+                    trackingNumberElement.textContent = 'N/A';
+                }
                 const successMessage = document.getElementById('successMessage');
+                
+                // Completely unhide the element by removing all hidden classes
                 successMessage.classList.remove('hidden');
-                successMessage.classList.add('animate-slide-up');
+                successMessage.classList.remove('hidden-by-user');
+                
+                // Set explicit inline styles to keep it visible
+                successMessage.style.display = 'block';
+                successMessage.style.visibility = 'visible';
+                successMessage.style.opacity = '1';
+                successMessage.style.pointerEvents = 'auto';
+                successMessage.style.position = 'relative';
+                
+                // Force a repaint
+                void successMessage.offsetHeight;
+                console.log('✅ Success message display:', successMessage.style.display);
+                console.log('✅ Success message visibility:', successMessage.style.visibility);
+                console.log('✅ Success message opacity:', successMessage.style.opacity);
 
-                // Scroll to success message first
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // PREVENT ANYTHING FROM HIDING THE MESSAGE - MutationObserver
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.attributeName === 'class') {
+                            console.log('🔍 Class mutation detected on success message:', successMessage.className);
+                            // Immediately remove 'hidden' class if someone tries to add it
+                            if (successMessage.classList.contains('hidden')) {
+                                console.warn('⚠️ Someone tried to add hidden class! Removing it...');
+                                successMessage.classList.remove('hidden');
+                            }
+                        }
+                        if (mutation.attributeName === 'style') {
+                            console.log('🔍 Style mutation detected on success message');
+                            // Ensure display stays visible
+                            if (successMessage.style.display === 'none') {
+                                console.warn('⚠️ Someone tried to set display:none! Fixing it...');
+                                successMessage.style.display = 'block';
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(successMessage, {
+                    attributes: true,
+                    attributeFilter: ['class', 'style'],
+                    attributeOldValue: true
+                });
+                console.log('✅ MutationObserver set up to protect success message');
+
+                // Scroll to success message after a tiny delay to ensure rendering
+                setTimeout(() => {
+                    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    console.log('✅ Scrolled to success message');
+                }, 100);
 
                 // Store tracking number in console for user reference
                 console.log(`Report submitted! Tracking Number: ${result.tracking_number}`);
 
                 // Add a "Copy Tracking Number" button
-                const trackingNumberElement = document.getElementById('trackingNumber');
                 trackingNumberElement.style.cursor = 'pointer';
                 trackingNumberElement.title = 'Click to copy tracking number';
                 trackingNumberElement.onclick = function() {
                     navigator.clipboard.writeText(result.tracking_number);
                     alert('Tracking number copied to clipboard!');
+                    console.log('✅ Tracking number copied to clipboard');
                 };
 
-                // Wait before resetting form to let user copy tracking number
-                setTimeout(() => {
-                    // Reset form but keep success message visible for longer
-                    this.reset();
-                    document.getElementById('photoPreview').classList.add('hidden');
-                    document.getElementById('gpsDisplay').classList.add('hidden');
-                    
-                    // Reset location button
-                    const locationBtn = document.getElementById('detectLocationBtn');
-                    locationBtn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Auto-detect My Location';
-                    locationBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    locationBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                    
-                    gpsCoordinates = null;
-                }, 15000); // Wait 15 seconds before resetting form
-
-                // Don't hide success message - let user manually dismiss it
                 // Add close button to success message if not present
                 if (!successMessage.querySelector('.close-btn')) {
                     const closeBtn = document.createElement('button');
-                    closeBtn.className = 'close-btn absolute top-2 right-2 text-white hover:text-gray-200';
+                    closeBtn.className = 'close-btn absolute top-2 right-2 text-white hover:text-gray-200 text-2xl font-bold';
                     closeBtn.innerHTML = '&times;';
-                    closeBtn.onclick = () => successMessage.classList.add('hidden');
+                    closeBtn.style.padding = '0.5rem 0.75rem';
+                    closeBtn.style.lineHeight = '1';
+                    closeBtn.onclick = function(e) {
+                        e.preventDefault();
+                        console.log('❌ Close button clicked - hiding message');
+                        successMessage.classList.add('hidden-by-user');
+                        successMessage.style.display = 'none';
+                        // Reset form after closing success message
+                        form.reset();
+                        document.getElementById('photoPreview').classList.add('hidden');
+                        document.getElementById('gpsDisplay').classList.add('hidden');
+                        
+                        // Reset location button
+                        const locationBtn = document.getElementById('detectLocationBtn');
+                        locationBtn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Auto-detect My Location';
+                        locationBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        locationBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+                        
+                        gpsCoordinates = null;
+                    };
                     successMessage.style.position = 'relative';
                     successMessage.appendChild(closeBtn);
                 }
-                        
-                // Reset form
-                this.reset();
-                document.getElementById('photoPreview').classList.add('hidden');
-                document.getElementById('gpsDisplay').classList.add('hidden');
-                
-                // Reset location button
-                const locationBtn = document.getElementById('detectLocationBtn');
-                locationBtn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Auto-detect My Location';
-                locationBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                locationBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                
-                gpsCoordinates = null;
-                
-                // Scroll to success message
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
             } catch (error) {
                 console.error('Full error:', error);

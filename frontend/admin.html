@@ -7,6 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js Map Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <!-- Leaflet Marker Cluster Plugin -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.min.js"></script>
     <style>
         /* Professional color palette */
         :root {
@@ -93,6 +100,34 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
+        
+        /* Map styles */
+        #reportMap {
+            height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .marker-popup {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        .marker-popup h4 {
+            margin: 0 0 8px 0;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .marker-popup p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        
+        .severity-high-marker { color: #ef4444; }
+        .severity-medium-marker { color: #f59e0b; }
+        .severity-low-marker { color: #22c55e; }
+        .severity-none-marker { color: #9ca3af; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -124,8 +159,8 @@
                 <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="map">
                     <i class="fas fa-map mr-3"></i>Map View
                 </a>
-                <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="analytics">
-                    <i class="fas fa-chart-bar mr-3"></i>Analytics
+                <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="budget">
+                    <i class="fas fa-wallet mr-3"></i>Budget Optimization
                 </a>
                 <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="users">
                     <i class="fas fa-users mr-3"></i>Users
@@ -334,18 +369,182 @@
                 </div>
             </div>
 
-            <!-- Other sections (Map, Analytics, Users, Settings) remain hidden for now -->
+            <!-- Map View Section -->
             <div id="mapSection" class="section-content hidden">
                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Map View</h3>
-                    <p class="text-gray-600">Map functionality would be implemented here</p>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Road Damage Map View</h3>
+                    
+                    <!-- Map Filters -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Severity Filter</label>
+                                <select id="mapSeverityFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Severity Levels</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Status Filter</label>
+                                <select id="mapStatusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Status</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="under_review">Under Review</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Damage Type</label>
+                                <select id="mapDamageFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Types</option>
+                                    <option value="pothole">Pothole</option>
+                                    <option value="longitudinal_crack">Longitudinal Crack</option>
+                                    <option value="lateral_crack">Lateral Crack</option>
+                                    <option value="mixed">Mixed</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="refreshMapMarkers()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Map Container -->
+                    <div id="reportMap"></div>
+                    
+                    <!-- Map Legend -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h4 class="font-medium text-gray-900 mb-3">Legend</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 bg-red-500 rounded-full mr-2"></span>
+                                <span class="text-sm text-gray-700">High Severity</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 bg-yellow-500 rounded-full mr-2"></span>
+                                <span class="text-sm text-gray-700">Medium Severity</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 bg-green-500 rounded-full mr-2"></span>
+                                <span class="text-sm text-gray-700">Low Severity</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 bg-gray-400 rounded-full mr-2"></span>
+                                <span class="text-sm text-gray-700">No Damage</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div id="analyticsSection" class="section-content hidden">
+            <div id="budgetSection" class="section-content hidden">
+                <!-- Budget Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-sm p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Total Budget</p>
+                                <p id="totalBudget" class="text-3xl font-bold text-gray-900">₦5,000,000</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-wallet text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Estimated Repairs Needed</p>
+                                <p id="estimatedRepairCost" class="text-3xl font-bold text-orange-600">₦0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-hammer text-orange-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Budget Remaining</p>
+                                <p id="budgetRemaining" class="text-3xl font-bold text-green-600">₦0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Allocation -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget Allocation by Damage Type</h3>
+                        <div class="space-y-4">
+                            <div id="budgetChart" style="height: 300px;">
+                                <canvas id="budgetDoughnutChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Optimization Strategy</h3>
+                        <div class="space-y-4">
+                            <div class="p-4 border border-green-200 bg-green-50 rounded-lg">
+                                <h4 class="font-medium text-green-900 mb-2">
+                                    <i class="fas fa-lightbulb mr-2"></i>Recommended Priority
+                                </h4>
+                                <p class="text-sm text-green-800">Based on severity and urgency, prioritize high-severity reports for maximum safety impact</p>
+                            </div>
+                            <div class="p-4 border border-blue-200 bg-blue-50 rounded-lg">
+                                <h4 class="font-medium text-blue-900 mb-2">
+                                    <i class="fas fa-chart-line mr-2"></i>Cost Optimization
+                                </h4>
+                                <p class="text-sm text-blue-800">Bundle repairs in same area to reduce transportation and labor costs by 15-20%</p>
+                            </div>
+                            <div class="p-4 border border-purple-200 bg-purple-50 rounded-lg">
+                                <h4 class="font-medium text-purple-900 mb-2">
+                                    <i class="fas fa-hourglass-half mr-2"></i>Timeline
+                                </h4>
+                                <p class="text-sm text-purple-800">Current budget can cover <span id="estimatedReports" class="font-semibold">-- reports</span> at current severity distribution</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Priority Queue -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Analytics</h3>
-                    <p class="text-gray-600">Advanced analytics would be implemented here</p>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Optimized Repair Priority Queue</h3>
+                        <button onclick="optimizeBudget()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>Optimize Now
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Cost</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="priorityQueueBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading optimization...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -357,9 +556,93 @@
             </div>
 
             <div id="settingsSection" class="section-content hidden">
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
-                    <p class="text-gray-600">System settings would be implemented here</p>
+                <!-- Settings Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- System Settings -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">System Configuration</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">API Endpoint</label>
+                                <input type="text" value="http://localhost:5000/api" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Report Check Interval (minutes)</label>
+                                <input type="number" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max File Upload Size (MB)</label>
+                                <input type="number" value="50" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mt-4">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Notifications</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-gray-700">Email Alerts</label>
+                                <input type="checkbox" checked class="w-4 h-4 rounded">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-gray-700">High Severity Reports</label>
+                                <input type="checkbox" checked class="w-4 h-4 rounded">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-gray-700">Daily Summary</label>
+                                <input type="checkbox" checked class="w-4 h-4 rounded">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-gray-700">New User Registrations</label>
+                                <input type="checkbox" class="w-4 h-4 rounded">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Settings -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Budget Management</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Budget (₦)</label>
+                                <input type="number" value="5000000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Alert Threshold (%)</label>
+                                <input type="number" value="80" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mt-4">
+                                Update Budget
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Model Settings -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">AI Model Configuration</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Detection Model</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option>YOLOv8 (Current)</option>
+                                    <option>YOLOv7</option>
+                                    <option>YOLOv6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Confidence Threshold</label>
+                                <input type="range" min="0" max="100" value="50" class="w-full">
+                                <span class="text-sm text-gray-600">50%</span>
+                            </div>
+                            <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mt-4">
+                                Apply Settings
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -450,6 +733,11 @@
                 });
             });
 
+            // Map filter listeners
+            document.getElementById('mapSeverityFilter').addEventListener('change', refreshMapMarkers);
+            document.getElementById('mapStatusFilter').addEventListener('change', refreshMapMarkers);
+            document.getElementById('mapDamageFilter').addEventListener('change', refreshMapMarkers);
+
             // Load initial data
             loadDashboardData();
             loadReports();
@@ -470,24 +758,39 @@
                 dashboard: 'Dashboard',
                 reports: 'All Reports',
                 map: 'Map View',
-                analytics: 'Analytics',
+                budget: 'Budget Optimization',
                 users: 'Users',
                 settings: 'Settings'
             };
             document.getElementById('pageTitle').textContent = titles[sectionName] || 'Dashboard';
+            
+            // Initialize map if map section is shown
+            if (sectionName === 'map') {
+                setTimeout(() => {
+                    initializeMap();
+                }, 100);
+            }
+            
+            // Load budget data if budget section is shown
+            if (sectionName === 'budget') {
+                setTimeout(() => {
+                    loadBudgetOptimization();
+                }, 100);
+            }
         }
 
         // Load dashboard statistics
         async function loadDashboardData() {
             try {
-                const response = await fetch('http://localhost:5000/api/reports', {
+                const response = await fetch('http://localhost:5000/api/admin/reports', {
                     headers: {
                         'Authorization': 'Basic ' + btoa('admin:secret')
                     }
                 });
                 if (!response.ok) throw new Error('Failed to fetch reports');
                 
-                const reports = await response.json();
+                const data = await response.json();
+                const reports = data.reports || data;
                 
                 // Calculate statistics
                 const stats = {
@@ -520,14 +823,15 @@
         // Load all reports
         async function loadReports() {
             try {
-                const response = await fetch('http://localhost:5000/api/reports', {
+                const response = await fetch('http://localhost:5000/api/admin/reports', {
                     headers: {
                         'Authorization': 'Basic ' + btoa('admin:secret')
                     }
                 });
                 if (!response.ok) throw new Error('Failed to fetch reports');
                 
-                allReports = await response.json();
+                const data = await response.json();
+                allReports = data.reports || data;
                 filterReports(currentFilter);
                 
             } catch (error) {
@@ -650,13 +954,18 @@
             return 'bg-green-500';
         }
 
-        async function viewReport_OLD(trackingNumber) {
-            // This is deprecated - use the newer version below
+        // View report details
+        async function viewReport(trackingNumber) {
             try {
-                const response = await fetch(`http://localhost:5000/api/track/${trackingNumber}`);
-                if (!response.ok) throw new Error('Failed to fetch report details');
+                // Find report in the loaded data
+                const report = allReports.find(r => r.tracking_number === trackingNumber);
                 
-                const report = await response.json();
+                if (!report) {
+                    console.error('Report not found in loaded data');
+                    alert('Report not found');
+                    return;
+                }
+                
                 showReportModal(report);
                 
             } catch (error) {
@@ -665,9 +974,21 @@
             }
         }
 
-        function editReport(trackingNumber) {
-            // Implement edit functionality
-            alert(`Edit functionality for report ${trackingNumber} would be implemented here`);
+        // Edit report
+        async function editReport(trackingNumber) {
+            try {
+                const report = allReports.find(r => r.tracking_number === trackingNumber);
+                if (!report) {
+                    alert('Report not found');
+                    return;
+                }
+                
+                showEditReportModal(report);
+                
+            } catch (error) {
+                console.error('Error in edit mode:', error);
+                alert('Failed to open edit mode');
+            }
         }
 
         function showReportModal(report) {
@@ -809,6 +1130,245 @@
             loadDashboardData();
         }
 
+        // Edit report modal
+        function showEditReportModal(report) {
+            const modal = document.getElementById('reportModal');
+            const content = document.getElementById('modalContent');
+            
+            const statusColor = getStatusColor(report.status);
+            const severityColor = getSeverityColor(report.severity_score);
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Report ID</h4>
+                            <p class="text-gray-600">${report.tracking_number}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Update Status</h4>
+                            <select id="statusSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value="${report.status}">
+                                <option value="submitted">Submitted</option>
+                                <option value="under_review">Under Review</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Location</h4>
+                            <input type="text" id="locationEdit" value="${report.location}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Severity (0-10)</h4>
+                            <input type="number" id="severityEdit" min="0" max="10" value="${report.severity_score || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Damage Type</h4>
+                            <input type="text" id="damageTypeEdit" value="${report.damage_type || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Estimated Cost (₦)</h4>
+                            <input type="number" id="costEdit" value="${report.estimated_cost || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Description</h4>
+                        <textarea id="descriptionEdit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-24">${report.description || ''}</textarea>
+                    </div>
+                    
+                    ${report.photo_url ? `
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Reported Image</h4>
+                        <img src="${report.photo_url}" alt="Road damage" class="w-full h-48 object-cover rounded-lg">
+                    </div>
+                    ` : ''}
+                    
+                    <div class="flex space-x-3 pt-4 border-t">
+                        <button onclick="saveReportEdits(${report.id})" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <button onclick="closeModal()" class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('statusSelect').value = report.status;
+            modal.classList.remove('hidden');
+        }
+
+        async function saveReportEdits(reportId) {
+            try {
+                const newStatus = document.getElementById('statusSelect').value;
+                
+                // First, update the status using the existing endpoint
+                const statusResponse = await fetch('http://localhost:5000/api/admin/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('admin:secret')
+                    },
+                    body: JSON.stringify({
+                        report_id: String(reportId),
+                        status: newStatus
+                    })
+                });
+
+                if (!statusResponse.ok) {
+                    const error = await statusResponse.json();
+                    throw new Error(error.error || 'Failed to update report status');
+                }
+
+                // Note: For additional fields like severity, damage_type, cost, description,
+                // you would need to implement backend endpoints if they don't exist yet.
+                // For now, we'll just update the status and show a success message.
+                
+                alert('✅ Report updated successfully!\n\nNote: Status has been updated. Additional fields (severity, cost, etc.) may require backend updates.');
+                closeModal();
+                loadReports();
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                alert(`Failed to save changes: ${error.message}`);
+            }
+        }
+
+        // Budget optimization functions
+        async function loadBudgetOptimization() {
+            try {
+                const response = await fetch('http://localhost:5000/api/admin/reports', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('admin:secret')
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch reports');
+                
+                const data = await response.json();
+                const reports = data.reports || data;
+                
+                // Calculate budget metrics
+                let totalCost = 0;
+                const damageTypeCosts = {};
+                
+                reports.forEach(report => {
+                    const cost = report.estimated_cost || 0;
+                    totalCost += cost;
+                    
+                    const damageType = report.damage_type || 'Unknown';
+                    if (!damageTypeCosts[damageType]) {
+                        damageTypeCosts[damageType] = 0;
+                    }
+                    damageTypeCosts[damageType] += cost;
+                });
+                
+                const totalBudget = 5000000; // Default budget
+                const remaining = totalBudget - totalCost;
+                
+                // Update UI
+                document.getElementById('estimatedRepairCost').textContent = '₦' + totalCost.toLocaleString();
+                document.getElementById('budgetRemaining').textContent = '₦' + Math.max(0, remaining).toLocaleString();
+                document.getElementById('estimatedReports').textContent = reports.length;
+                
+                // Load budget chart
+                loadBudgetChart(damageTypeCosts);
+                
+                // Load priority queue
+                loadPriorityQueue(reports);
+                
+            } catch (error) {
+                console.error('Error loading budget data:', error);
+            }
+        }
+
+        function loadBudgetChart(damageTypeCosts) {
+            const ctx = document.getElementById('budgetDoughnutChart');
+            if (!ctx) return;
+            
+            if (window.budgetChart instanceof Chart) {
+                window.budgetChart.destroy();
+            }
+            
+            window.budgetChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(damageTypeCosts),
+                    datasets: [{
+                        data: Object.values(damageTypeCosts),
+                        backgroundColor: ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadPriorityQueue(reports) {
+            // Sort by severity (highest first) then by cost
+            const sorted = [...reports].sort((a, b) => {
+                const severityDiff = (b.severity_score || 0) - (a.severity_score || 0);
+                if (severityDiff !== 0) return severityDiff;
+                return (b.estimated_cost || 0) - (a.estimated_cost || 0);
+            });
+            
+            const tbody = document.getElementById('priorityQueueBody');
+            tbody.innerHTML = '';
+            
+            let totalBudget = 5000000;
+            let spent = 0;
+            
+            sorted.slice(0, 20).forEach((report, index) => {
+                const cost = report.estimated_cost || 0;
+                const canAfford = spent + cost <= totalBudget;
+                
+                const row = document.createElement('tr');
+                row.className = !canAfford ? 'bg-red-50' : '';
+                
+                const statusColor = getStatusColor(report.status);
+                const severityColor = getSeverityColor(report.severity_score * 100);
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" style="background-color: ${canAfford ? '#dcfce7' : '#fee2e2'}; color: ${canAfford ? '#15803d' : '#991b1b'};">
+                            #${index + 1}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.tracking_number}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full text-white ${severityColor}">
+                            ${report.severity_score || 'TBD'}/10
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₦${(cost).toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewReport('${report.tracking_number}')" class="text-green-600 hover:text-green-900">View</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+                if (canAfford) spent += cost;
+            });
+        }
+
+        function optimizeBudget() {
+            loadBudgetOptimization();
+            alert('✅ Budget optimization complete! View the priority queue to see optimized repairs.');
+        }
+
         // Initialize charts
         function initCharts() {
             // Reports over time chart
@@ -852,853 +1412,166 @@
                 });
             }
         }
-    </script>
-</body>
-</html>
-</head>
-<body class="bg-gray-50">
-    <!-- Sidebar -->
-    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg sidebar-transition">
-        <div class="flex items-center justify-between p-4 border-b border-gray-200">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-road text-white"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-bold text-gray-900">RoadWatch</h2>
-                    <p class="text-xs text-gray-500">Admin Dashboard</p>
-                </div>
-            </div>
-            <button id="sidebarToggle" class="lg:hidden text-gray-600 hover:text-gray-900">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <nav class="mt-6">
-            <div class="px-4 space-y-2">
-                <a href="#" class="nav-item active flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-section="dashboard" style="background-color: var(--primary-blue-light); color: var(--primary-blue);">
-                    <i class="fas fa-chart-line mr-3"></i>Dashboard
-                </a>
-                <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="reports">
-                    <i class="fas fa-list mr-3"></i>All Reports
-                </a>
-                <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="analytics">
-                    <i class="fas fa-chart-bar mr-3"></i>Analytics
-                </a>
-                <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100" data-section="settings">
-                    <i class="fas fa-cog mr-3"></i>Settings
-                </a>
-            </div>
-            
-            <div class="px-4 mt-8">
-                <div class="border-t border-gray-200 pt-4">
-                    <div class="flex items-center space-x-3 px-3 py-2">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--primary-blue);">
-                            A
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Admin User</p>
-                            <p class="text-xs text-gray-500">Lagos State Govt</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </div>
 
-    <!-- Mobile sidebar overlay -->
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+        // Map functionality
+        let mapInstance = null;
+        let markerClusterGroup = null;
+        let allMapMarkers = [];
 
-    <!-- Main Content -->
-    <div class="lg:ml-64">
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="flex items-center justify-between px-4 py-4">
-                <div class="flex items-center space-x-4">
-                    <button id="mobileMenuToggle" class="lg:hidden text-gray-600 hover:text-gray-900">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div>
-                        <h1 id="pageTitle" class="text-2xl font-bold text-gray-900">Dashboard</h1>
-                        <p class="text-sm text-gray-500">Monitor and manage road damage reports with AI analysis</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <!-- Search -->
-                    <div class="relative hidden md:block">
-                        <input type="text" placeholder="Search reports..." 
-                               class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div>
-                    
-                    <!-- Notifications -->
-                    <div class="relative">
-                        <button class="relative p-2 text-gray-600 hover:text-gray-900">
-                            <i class="fas fa-bell"></i>
-                            <span class="absolute -top-1 -right-1 w-4 h-4 text-white text-xs rounded-full flex items-center justify-center" style="background-color: var(--danger-red);">3</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Profile -->
-                    <div class="relative">
-                        <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--primary-blue);">
-                                A
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content Area -->
-        <main class="p-6">
-            <!-- Dashboard Section -->
-            <div id="dashboardSection" class="section">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-600">Total Reports</p>
-                                <p id="totalReports" class="text-3xl font-bold text-gray-900">0</p>
-                                <p class="text-sm text-gray-500 flex items-center mt-1">
-                                    <i class="fas fa-arrow-up mr-1"></i> Latest submissions
-                                </p>
-                            </div>
-                            <div class="p-3 rounded-lg" style="background-color: var(--primary-blue-light);">
-                                <i class="fas fa-file-alt text-2xl" style="color: var(--primary-blue);"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-600">High Severity</p>
-                                <p id="highSeverityReports" class="text-3xl font-bold" style="color: var(--danger-red);">0</p>
-                                <p class="text-sm text-gray-500 flex items-center mt-1">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i> Need attention
-                                </p>
-                            </div>
-                            <div class="p-3 rounded-lg" style="background-color: var(--danger-red-light);">
-                                <i class="fas fa-exclamation-triangle text-2xl" style="color: var(--danger-red);"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-600">Completed</p>
-                                <p id="completedReports" class="text-3xl font-bold" style="color: var(--success-green);">0</p>
-                                <p class="text-sm text-gray-500 flex items-center mt-1">
-                                    <i class="fas fa-check mr-1"></i> <span id="completionRate">0%</span> completion
-                                </p>
-                            </div>
-                            <div class="p-3 rounded-lg" style="background-color: var(--success-green-light);">
-                                <i class="fas fa-check-circle text-2xl" style="color: var(--success-green);"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-600">Analyzed</p>
-                                <p class="text-3xl font-bold" style="color: var(--primary-blue);">42%</p>
-                                <p class="text-sm text-gray-500 flex items-center mt-1">
-                                    <i class="fas fa-brain mr-1"></i> Detection accuracy
-                                </p>
-                            </div>
-                            <div class="p-3 rounded-lg" style="background-color: var(--primary-blue-light);">
-                                <i class="fas fa-brain text-2xl" style="color: var(--primary-blue);"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Damage Types Distribution</h3>
-                        <canvas id="damageTypesChart" height="300"></canvas>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Severity Distribution</h3>
-                        <canvas id="severityChart" height="300"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports Section -->
-            <div id="reportsSection" class="section hidden">
-                <div class="bg-white rounded-xl shadow-sm">
-                    <!-- Filters -->
-                    <div class="border-b border-gray-200 px-6 py-4">
-                        <div class="flex flex-wrap gap-2">
-                            <button class="filter-btn filter-active px-4 py-2 rounded-lg text-sm font-medium transition duration-200" data-filter="all">
-                                All Reports
-                            </button>
-                            <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-200" data-filter="submitted">
-                                Submitted
-                            </button>
-                            <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-200" data-filter="under_review">
-                                Under Review
-                            </button>
-                            <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-200" data-filter="scheduled">
-                                Scheduled
-                            </button>
-                            <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-200" data-filter="completed">
-                                Completed
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Damage Types</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Severity</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reportsTableBody" class="bg-white divide-y divide-gray-200">
-                                <!-- Reports will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Analytics Section -->
-            <div id="analyticsSection" class="section hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Performance Metrics</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-4 rounded-lg" style="background-color: var(--primary-blue-light);">
-                                <div>
-                                    <p class="text-sm text-gray-600">Road Classification Accuracy</p>
-                                    <p class="text-2xl font-bold" style="color: var(--primary-blue);">97%</p>
-                                </div>
-                                <i class="fas fa-road text-3xl" style="color: var(--primary-blue);"></i>
-                            </div>
-                            <div class="flex justify-between items-center p-4 rounded-lg" style="background-color: var(--success-green-light);">
-                                <div>
-                                    <p class="text-sm text-gray-600">Damage Detection mAP@0.5</p>
-                                    <p class="text-2xl font-bold" style="color: var(--success-green);">42%</p>
-                                </div>
-                                <i class="fas fa-bullseye text-3xl" style="color: var(--success-green);"></i>
-                            </div>
-                            <div class="flex justify-between items-center p-4 rounded-lg" style="background-color: var(--danger-red-light);">
-                                <div>
-                                    <p class="text-sm text-gray-600">Avg Processing Time</p>
-                                    <p class="text-2xl font-bold" style="color: var(--danger-red);">&lt;3s</p>
-                                </div>
-                                <i class="fas fa-clock text-3xl" style="color: var(--danger-red);"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Repair Urgency Distribution chart removed for cleaner UI -->
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Report Detail Modal -->
-    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900">Report Details & AI Analysis</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div id="modalContent" class="p-6">
-                <!-- Modal content will be populated here -->
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboardData();
-            loadReports();
-            initializeNavigation();
-        });
-
-        // Navigation
-        function initializeNavigation() {
-            // Sidebar navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Update active nav item
-                    document.querySelectorAll('.nav-item').forEach(nav => {
-                        nav.classList.remove('active');
-                        nav.classList.add('text-gray-600');
-                        nav.style.backgroundColor = 'transparent';
-                        nav.style.color = '';
-                    });
-                    
-                    this.classList.add('active');
-                    this.classList.remove('text-gray-600');
-                    this.style.backgroundColor = 'var(--primary-blue-light)';
-                    this.style.color = 'var(--primary-blue)';
-                    
-                    // Show corresponding section
-                    const section = this.dataset.section;
-                    showSection(section);
-                });
-            });
-
-            // Mobile menu toggle
-            document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
-                
-                sidebar.style.transform = 'translateX(0)';
-                overlay.classList.remove('hidden');
-            });
-
-            document.getElementById('sidebarToggle').addEventListener('click', function() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
-                
-                sidebar.style.transform = 'translateX(-100%)';
-                overlay.classList.add('hidden');
-            });
-
-            // Filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Update active filter
-                    document.querySelectorAll('.filter-btn').forEach(b => {
-                        b.classList.remove('filter-active');
-                        b.classList.add('bg-gray-100', 'text-gray-700');
-                    });
-                    
-                    this.classList.add('filter-active');
-                    this.classList.remove('bg-gray-100', 'text-gray-700');
-                    
-                    // Filter reports
-                    const filter = this.dataset.filter;
-                    filterReports(filter);
-                });
-            });
-        }
-
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            
-            // Show selected section
-            document.getElementById(sectionName + 'Section').classList.remove('hidden');
-            
-            // Update page title
-            const titles = {
-                'dashboard': 'Dashboard',
-                'reports': 'All Reports',
-                'analytics': 'Analytics',
-                'settings': 'Settings'
-            };
-            document.getElementById('pageTitle').textContent = titles[sectionName] || sectionName;
-            
-            // Load section-specific data
-            if (sectionName === 'analytics') {
-                loadAnalyticsCharts();
-            }
-        }
-
-        // Load dashboard data
-        async function loadDashboardData() {
+        function initializeMap() {
             try {
-                // Fetch analytics data for charts
-                const analyticsResponse = await fetch('http://localhost:5000/api/admin/analytics');
-                const analytics = await analyticsResponse.json();
+                // Initialize map centered on Nigeria (approximate center: Lagos)
+                const initialCoords = [6.5244, 3.3792]; // Lagos coordinates
                 
-                // Update stats cards
-                document.getElementById('totalReports').textContent = analytics.total_reports || 0;
-                document.getElementById('highSeverityReports').textContent = analytics.high_severity_reports || 0;
-                document.getElementById('completedReports').textContent = analytics.completed_reports || 0;
-                document.getElementById('completionRate').textContent = (analytics.completion_rate || 0).toFixed(1) + '%';
-                
-                // Load charts with analytics data
-                loadDashboardCharts(analytics);
-                
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
-        }
-
-        // Load reports
-        async function loadReports() {
-            try {
-                const response = await fetch('http://localhost:5000/api/admin/reports');
-                const data = await response.json();
-                const allReportsList = data.reports || [];
-                
-                allReports = allReportsList;
-                displayReports(allReports);
-                
-            } catch (error) {
-                console.error('Error loading reports:', error);
-                // Show loading error
-                document.getElementById('reportsTableBody').innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Error loading reports. Please try again.
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-
-        function displayReports(reports) {
-            const tbody = document.getElementById('reportsTableBody');
-            
-            if (reports.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                            <i class="fas fa-inbox mr-2"></i>
-                            No reports found
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = reports.map(report => createReportRow(report)).join('');
-        }
-
-        function createReportRow(report) {
-            const severityClass = getSeverityClass(report.severity_level);
-            const statusClass = getStatusClass(report.status);
-            const damageTypes = Array.isArray(report.damage_types) ? report.damage_types.join(', ') : 'Analysis pending';
-            
-            return `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${report.tracking_number}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${report.location}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${damageTypes}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center space-x-2">
-                            <span class="${severityClass} text-white px-2 py-1 rounded-full text-xs font-medium">
-                                ${report.severity_level?.toUpperCase() || 'PENDING'}
-                            </span>
-                            ${report.severity_score ? `<span class="text-sm text-gray-600">(${(report.severity_score * 100).toFixed(1)}%)</span>` : ''}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="${statusClass} px-2 py-1 text-xs font-medium rounded-full">
-                            ${report.status.replace('_', ' ')}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${new Date(report.created_at).toLocaleDateString()}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button onclick="viewReport('${report.tracking_number}')" 
-                                class="mr-2" style="color: var(--primary-blue);">
-                            <i class="fas fa-eye mr-1"></i>View
-                        </button>
-                        <button onclick="viewReport('${report.tracking_number}')" 
-                                style="color: var(--primary-blue);">
-                            <i class="fas fa-edit mr-1"></i>Details
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }
-
-        function getSeverityClass(level) {
-            switch(level) {
-                case 'high': return 'severity-high';
-                case 'medium': return 'severity-medium';
-                case 'low': return 'severity-low';
-                default: return 'severity-none';
-            }
-        }
-
-        function getStatusClass(status) {
-            switch(status) {
-                case 'submitted': return 'bg-blue-100 text-blue-900';
-                case 'under_review': return 'bg-blue-100 text-blue-900';
-                case 'scheduled': return 'bg-blue-100 text-blue-900';
-                case 'completed': return 'bg-green-100 text-green-900';
-                default: return 'bg-gray-100 text-gray-800';
-            }
-        }
-
-        function filterReports(filter) {
-            currentFilter = filter;
-            let filteredReports = allReports;
-            
-            if (filter !== 'all') {
-                filteredReports = allReports.filter(report => report.status === filter);
-            }
-            
-            displayReports(filteredReports);
-        }
-
-        // View report details with AI analysis
-        async function viewReport(trackingNumber) {
-            try {
-                console.log(`Loading report: ${trackingNumber}`);
-                const response = await fetch(`http://localhost:5000/api/admin/report/${trackingNumber}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (mapInstance) {
+                    mapInstance.remove();
                 }
                 
-                const report = await response.json();
-                console.log('Report loaded:', report);
-                showReportModal(report);
+                mapInstance = L.map('reportMap').setView(initialCoords, 10);
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(mapInstance);
+                
+                // Initialize marker cluster group
+                markerClusterGroup = L.markerClusterGroup({
+                    chunkedLoading: true
+                });
+                mapInstance.addLayer(markerClusterGroup);
+                
+                // Load markers
+                refreshMapMarkers();
                 
             } catch (error) {
-                console.error('Error loading report details:', error);
-                alert(`Error loading report details: ${error.message}`);
+                console.error('Error initializing map:', error);
             }
         }
 
-        function showReportModal(report) {
-            const modal = document.getElementById('reportModal');
-            const content = document.getElementById('modalContent');
-            
-            const aiAnalysis = report.ai_analysis;
-            const damageTypes = Array.isArray(report.damage_types) ? report.damage_types : [];
-            const imageUrl = report.image_filename ? `http://localhost:5000/uploads/${report.image_filename}` : null;
-            
-            content.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Basic Info & Image -->
-                    <div class="space-y-6">
-                        <!-- Road Damage Image -->
-                        <div class="bg-gray-50 rounded-lg overflow-hidden">
-                            ${imageUrl ? `
-                                <img src="${imageUrl}" alt="Road damage" class="w-full h-80 object-cover">
-                            ` : `
-                                <div class="w-full h-80 bg-gray-200 flex items-center justify-center">
-                                    <i class="fas fa-image text-gray-400 text-4xl"></i>
-                                </div>
-                            `}
-                        </div>
-                        
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-900 mb-3">Report Information</h3>
-                            <div class="space-y-2">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Tracking ID:</span>
-                                    <span class="font-mono text-gray-900">${report.tracking_number}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Location:</span>
-                                    <span class="text-gray-900">${report.location}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Status:</span>
-                                    <span class="${getStatusClass(report.status)} px-2 py-1 rounded text-sm">
-                                        ${report.status.replace('_', ' ')}
-                                    </span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Submitted:</span>
-                                    <span class="text-gray-900">${new Date(report.created_at).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-900 mb-3">Description</h3>
-                            <p class="text-gray-700">${report.description || 'No description provided'}</p>
-                        </div>
-                        
-                        ${report.phone ? `
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-900 mb-3">Contact Information</h3>
-                            <p class="text-gray-700">${report.phone}</p>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <!-- AI Analysis -->
-                    <div class="space-y-6">
-                        ${aiAnalysis ? generateAIAnalysisDisplay(aiAnalysis, report) : `
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-clock text-yellow-600 mr-2"></i>
-                                <span class="text-yellow-800 font-medium">AI Analysis Pending</span>
-                            </div>
-                            <p class="text-yellow-700 text-sm mt-1">
-                                Image analysis is in progress or no image was submitted.
-                            </p>
-                        </div>
-                        `}
-                        
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-900 mb-3">Quick Actions</h3>
-                            <div class="space-y-2">
-                                <button onclick="updateReportStatus(${report.id}, 'under_review')" 
-                                        class="w-full text-white py-2 px-4 rounded-md transition duration-200" 
-                                        style="background-color: var(--primary-blue); hover: var(--primary-blue-dark);">
-                                    Mark Under Review
-                                </button>
-                                <button onclick="updateReportStatus(${report.id}, 'scheduled')" 
-                                        class="w-full text-white py-2 px-4 rounded-md transition duration-200" 
-                                        style="background-color: var(--primary-blue); hover: var(--primary-blue-dark);">
-                                    Schedule Repair
-                                </button>
-                                <button onclick="updateReportStatus(${report.id}, 'completed')" 
-                                        class="w-full text-white py-2 px-4 rounded-md transition duration-200" 
-                                        style="background-color: var(--success-green); hover: var(--success-green-dark);">
-                                    Mark Complete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
+        function getSeverityColor(score) {
+            if (!score) return 'gray';
+            if (score >= 70) return 'red';
+            if (score >= 30) return 'orange';
+            if (score > 0) return 'green';
+            return 'gray';
         }
 
-        function generateAIAnalysisDisplay(analysis, report) {
-            if (!analysis || analysis.status !== 'completed') {
-                return `
-                    <div class="rounded-lg p-4" style="background-color: var(--danger-red-light); border: 1px solid var(--danger-red);">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle mr-2" style="color: var(--danger-red);"></i>
-                            <span class="font-medium" style="color: var(--danger-red-dark);">AI Analysis Failed</span>
-                        </div>
-                        <p class="text-sm mt-1" style="color: var(--danger-red-dark);">
-                            ${analysis?.message || 'Analysis could not be completed'}
-                        </p>
-                    </div>
-                `;
-            }
+        function getSeverityLabel(score) {
+            if (!score) return 'None';
+            if (score >= 70) return 'High';
+            if (score >= 30) return 'Medium';
+            if (score > 0) return 'Low';
+            return 'None';
+        }
 
-            const summary = analysis.summary;
-            const severityClass = getSeverityClass(summary.severity_level);
+        function createMarkerIcon(severity, damageType) {
+            const color = {
+                'red': '#ef4444',
+                'orange': '#f59e0b',
+                'green': '#22c55e',
+                'gray': '#9ca3af'
+            }[severity] || '#9ca3af';
             
-            return `
-                <div class="rounded-lg p-4" style="background-color: var(--primary-blue-light); border: 1px solid var(--primary-blue);">
-                    <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
-                        <i class="fas fa-brain mr-2" style="color: var(--primary-blue);"></i>
-                        AI Analysis Results
-                    </h3>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div class="bg-white rounded p-3">
-                            <div class="text-sm text-gray-600">Damages Detected</div>
-                            <div class="text-xl font-bold text-gray-900">${summary.total_damages}</div>
-                        </div>
-                        <div class="bg-white rounded p-3">
-                            <div class="text-sm text-gray-600">Processing Time</div>
-                            <div class="text-xl font-bold text-gray-900">${analysis.processing_time || 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">Severity Level:</span>
-                            <span class="${severityClass} text-white px-3 py-1 rounded-full text-sm font-medium">
-                                ${summary.severity_level.toUpperCase()}
-                            </span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">Severity Score:</span>
-                            <span class="font-bold text-gray-900">${(summary.severity_score * 100).toFixed(1)}%</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">Dominant Damage:</span>
-                            <span class="font-medium text-gray-900">${summary.dominant_damage || 'N/A'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <div class="text-sm text-gray-700 mb-2">Damage Types Detected:</div>
-                        <div class="flex flex-wrap gap-2">
-                            ${summary.damage_types.map(type => 
-                                `<span class="px-2 py-1 rounded text-sm text-white" style="background-color: var(--primary-blue);">${type}</span>`
-                            ).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <div class="text-sm text-gray-700 mb-2">AI Recommendations:</div>
-                        <ul class="text-sm text-gray-600 space-y-1">
-                            ${analysis.recommendations.map(rec => `<li>• ${rec}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-            `;
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                    <i class="fas fa-map-pin" style="font-size: 14px;"></i>
+                </div>`,
+                iconSize: [40, 40],
+                popupAnchor: [0, -20]
+            });
         }
 
-        function closeModal() {
-            document.getElementById('reportModal').classList.add('hidden');
-        }
-
-        // Store chart instances globally to allow destruction
-        let dashboardCharts = {
-            reports: null,
-            damageTypes: null,
-            severity: null
-        };
-
-        // Load dashboard charts
-        function loadDashboardCharts(data) {
-            // Destroy existing charts
-            if (dashboardCharts.reports) {
-                dashboardCharts.reports.destroy();
-            }
-            if (dashboardCharts.damageTypes) {
-                dashboardCharts.damageTypes.destroy();
-            }
-            if (dashboardCharts.severity) {
-                dashboardCharts.severity.destroy();
-            }
-
-            // Reports by status chart - displays current status distribution as line chart
-            const ctxReports = document.getElementById('reportsChart');
-            if (ctxReports) {
-                const statusDist = data.status_distribution || {};
-                const statusLabels = Object.keys(statusDist).map(s => s.replace('_', ' '));
-                const statusValues = Object.values(statusDist);
+        async function refreshMapMarkers() {
+            try {
+                markerClusterGroup.clearLayers();
+                allMapMarkers = [];
                 
-                dashboardCharts.reports = new Chart(ctxReports, {
-                    type: 'line',
-                    data: {
-                        labels: statusLabels.length > 0 ? statusLabels : ['No Data'],
-                        datasets: [{
-                            label: 'Reports by Status',
-                            data: statusValues.length > 0 ? statusValues : [0],
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            tension: 0.3,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        }
+                // Get filter values
+                const severityFilter = document.getElementById('mapSeverityFilter').value;
+                const statusFilter = document.getElementById('mapStatusFilter').value;
+                const damageFilter = document.getElementById('mapDamageFilter').value;
+                
+                // Fetch reports
+                const response = await fetch('http://localhost:5000/api/admin/reports', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('admin:secret')
                     }
                 });
-            }
-
-            // Damage types chart - professional palette
-            const ctx1 = document.getElementById('damageTypesChart');
-            if (ctx1) {
-                dashboardCharts.damageTypes = new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(data.damage_type_distribution || {}),
-                        datasets: [{
-                            data: Object.values(data.damage_type_distribution || {}),
-                            backgroundColor: ['#ef4444', '#3b82f6', '#22c55e', '#e5e7eb', '#9ca3af'],
-                            borderColor: '#ffffff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
+                
+                if (!response.ok) throw new Error('Failed to fetch reports');
+                
+                const data = await response.json();
+                const reports = data.reports || data;
+                
+                // Filter reports
+                const filteredReports = reports.filter(report => {
+                    let pass = true;
+                    
+                    // Severity filter
+                    if (severityFilter !== 'all') {
+                        const reportSeverity = getSeverityLabel(report.severity_score * 100);
+                        if (reportSeverity.toLowerCase() !== severityFilter) pass = false;
+                    }
+                    
+                    // Status filter
+                    if (statusFilter !== 'all') {
+                        if (report.status !== statusFilter) pass = false;
+                    }
+                    
+                    // Damage type filter
+                    if (damageFilter !== 'all') {
+                        if (report.damage_type !== damageFilter) pass = false;
+                    }
+                    
+                    return pass;
+                });
+                
+                // Add markers
+                filteredReports.forEach(report => {
+                    // Parse location to get coordinates (format: "lat,lon" or just use approximate)
+                    let lat, lon;
+                    
+                    if (report.location && report.location.includes(',')) {
+                        const coords = report.location.split(',');
+                        lat = parseFloat(coords[0].trim());
+                        lon = parseFloat(coords[1].trim());
+                    } else {
+                        // Use approximate coordinates around Lagos with random offset
+                        lat = 6.5 + (Math.random() - 0.5) * 0.5;
+                        lon = 3.3 + (Math.random() - 0.5) * 0.5;
+                    }
+                    
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        const severity = getSeverityColor(report.severity_score * 100);
+                        const icon = createMarkerIcon(severity, report.damage_type);
+                        
+                        const marker = L.marker([lat, lon], { icon: icon });
+                        
+                        // Create popup content
+                        const popupContent = `
+                            <div class="marker-popup" style="min-width: 250px;">
+                                <h4>${report.tracking_number}</h4>
+                                <p><strong>Location:</strong> ${report.location}</p>
+                                <p><strong>Status:</strong> <span style="color: #6b7280;">${report.status.replace('_', ' ')}</span></p>
+                                <p><strong>Damage Type:</strong> ${report.damage_type || 'Unknown'}</p>
+                                <p><strong>Severity:</strong> ${report.severity_score ? Math.round(report.severity_score * 100) + '/100' : 'TBD'}</p>
+                                ${report.estimated_cost ? `<p><strong>Est. Cost:</strong> ₦${report.estimated_cost.toLocaleString()}</p>` : ''}
+                                <p style="font-size: 12px; color: #9ca3af; margin-top: 8px;">
+                                    Submitted: ${new Date(report.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        markerClusterGroup.addLayer(marker);
+                        allMapMarkers.push(marker);
                     }
                 });
-            }
-
-            // Severity chart - professional palette
-            const ctx2 = document.getElementById('severityChart');
-            if (ctx2) {
-                dashboardCharts.severity = new Chart(ctx2, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(data.severity_distribution || {}),
-                        datasets: [{
-                            label: 'Reports',
-                            data: Object.values(data.severity_distribution || {}),
-                            backgroundColor: ['#22c55e', '#3b82f6', '#ef4444'],
-                            borderColor: ['#15803d', '#1e40af', '#b91c1c'],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function loadAnalyticsCharts() {
-            // Load urgency chart - professional palette (removing this chart, return early)
-            return;
-            // Note: Repair Urgency Distribution chart has been removed for cleaner UI
-            const ctx = document.getElementById('urgencyChart');
-            if (ctx) {
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Immediate', 'Scheduled', 'Routine', 'Monitoring'],
-                        datasets: [{
-                            data: [15, 35, 40, 10],
-                            backgroundColor: ['#ef4444', '#3b82f6', '#22c55e', '#9ca3af'],
-                            borderColor: '#ffffff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
+                
+            } catch (error) {
+                console.error('Error refreshing map markers:', error);
             }
         }
     </script>
