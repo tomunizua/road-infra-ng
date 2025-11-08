@@ -15,6 +15,13 @@ class Report(db.Model):
     description = db.Column(db.Text, nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     
+    # GPS and Location fields (NEW)
+    state = db.Column(db.String(50), default='Lagos', nullable=False)
+    lga = db.Column(db.String(100), nullable=True)
+    gps_latitude = db.Column(db.Float, nullable=True)
+    gps_longitude = db.Column(db.Float, nullable=True)
+    gps_detected = db.Column(db.Boolean, default=False, nullable=False)
+    
     # AI prediction results
     damage_detected = db.Column(db.Boolean, nullable=False)
     damage_type = db.Column(db.String(100), nullable=False)

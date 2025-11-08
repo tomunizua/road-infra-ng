@@ -30,8 +30,8 @@
         }
         
         @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.6); }
+            0%, 100% { box-shadow: 0 0 20px rgba(22, 163, 74, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(22, 163, 74, 0.6); }
         }
         
         @keyframes float {
@@ -40,7 +40,7 @@
         }
 
         .hero-gradient {
-            background: linear-gradient(135deg, #1a5d1a 0%, #0d3d0d 100%);
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%);
         }
         
         .hero-image {
@@ -49,7 +49,7 @@
         }
         
         .hero-overlay {
-            background: linear-gradient(135deg, rgba(26, 93, 26, 0.95) 0%, rgba(13, 61, 13, 0.9) 100%);
+            background: linear-gradient(135deg, rgba(21, 128, 61, 0.95) 0%, rgba(22, 101, 52, 0.9) 100%);
         }
         
         .glass-effect {
@@ -78,14 +78,14 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
             transition: all 0.3s ease;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
         }
         
         .btn-secondary {
@@ -127,7 +127,7 @@
         }
         
         .status-timeline .timeline-item.active:not(:last-child)::after {
-            background: linear-gradient(to bottom, #22c55e, #16a34a);
+            background: linear-gradient(to bottom, #16a34a, #15803d);
         }
         
         .form-floating {
@@ -141,8 +141,8 @@
         
         .form-floating input:focus,
         .form-floating textarea:focus {
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+            border-color: #16a34a;
         }
         
         .mobile-menu {
@@ -182,12 +182,12 @@
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
+            background: linear-gradient(135deg, #16a34a, #15803d);
             border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #16a34a, #15803d);
+            background: linear-gradient(135deg, #15803d, #166534);
         }
     </style>
 </head>
@@ -307,7 +307,7 @@
                                             <span class="text-sm font-medium">Photo Analysis</span>
                                         </div>
                                         <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-                                            <div class="bg-green-500 h-2 rounded-full" style="width: 97%"></div>
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: 97%"></div> 
                                         </div>
                                         <span class="text-xs text-gray-600">97% Accuracy</span>
                                     </div>
@@ -342,10 +342,10 @@
                 <!-- Step 1 -->
                 <div class="feature-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
                     <div class="relative mb-6">
-                        <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
+                        <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
                             <i class="fas fa-camera text-3xl text-white"></i>
                         </div>
-                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
                     </div>
                     <h3 class="text-2xl font-bold mb-4 text-gray-900">Capture & Submit</h3>
                     <p class="text-gray-600 mb-6">Take a photo of potholes, road cracks, damaged surfaces, or broken infrastructure. Add location and description.</p>
@@ -360,7 +360,7 @@
                         <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-brain text-3xl text-white"></i>
                         </div>
-                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
                     </div>
                     <h3 class="text-2xl font-bold mb-4 text-gray-900">AI Analysis</h3>
                     <p class="text-gray-600 mb-6">Our machine learning model analyzes the image, detects damage type, and calculates severity score automatically.</p>
@@ -372,10 +372,10 @@
                 <!-- Step 3 -->
                 <div class="feature-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
                     <div class="relative mb-6">
-                        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-tools text-3xl text-white"></i>
                         </div>
-                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
                     </div>
                     <h3 class="text-2xl font-bold mb-4 text-gray-900">Repair & Track</h3>
                     <p class="text-gray-600 mb-6">Government prioritizes repairs based on AI analysis and budget optimization. Track progress via SMS & web.</p>
@@ -473,6 +473,17 @@
                 <p class="text-xl text-gray-600">Help improve Nigerian roads with AI-powered reporting</p>
             </div>
 
+            <!-- Lagos Info Banner -->
+            <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
+                <div class="flex-shrink-0 text-blue-600 text-lg mt-0.5">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-blue-900">Currently Available in Lagos State</div>
+                    <p class="text-sm text-blue-800 mt-1">This pilot program is currently serving Lagos State. We'll be expanding to other states soon! Reports will be automatically classified by Local Government Area (LGA) for efficient management.</p>
+                </div>
+            </div>
+
             <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
                 <form id="reportForm" class="space-y-8">
                     <!-- Photo Upload -->
@@ -524,78 +535,79 @@
                         <img id="photoPreview" class="hidden mt-4 max-w-full h-48 object-cover rounded-xl shadow-lg">
                     </div>
 
-                    <!-- Location Input -->
+                    <!-- GPS Detection - Primary Action -->
+                    <div class="form-floating">
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-map text-green-600 mr-2"></i>Location Detection
+                        </label>
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+                            <p class="text-sm text-blue-800 mb-3">
+                                <i class="fas fa-info-circle mr-2"></i>We'll use your GPS location to determine your Local Government Area (LGA) in Lagos for accurate reporting.
+                            </p>
+                            <button type="button" id="detectLocationBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                                <i class="fas fa-crosshairs mr-2 text-lg"></i>Detect My Location (GPS)
+                                <div id="locationSpinner" class="hidden ml-3">
+                                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- GPS Success Display -->
+                        <div id="gpsDisplay" class="hidden mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-check-circle text-green-600 text-lg mt-0.5"></i>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-green-800">Location Detected!</div>
+                                    <div id="gpsCoords" class="text-sm text-green-700 font-mono mt-1"></div>
+                                    <div id="detectedLGA" class="text-sm text-green-700 mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Description -->
                     <div class="form-floating">
                         <label for="location" class="block text-sm font-semibold text-gray-700 mb-3">
                             <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Location Description
                         </label>
                         <input type="text" id="location" placeholder="e.g., Ikeja Road, near Shoprite" required
                                class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-lightbulb text-green-600 mr-1"></i>Describe the specific road location or landmark
+                        </p>
                     </div>
 
-                    <!-- State Selection -->
+                    <!-- LGA Selection (Lagos Only) -->
                     <div class="form-floating">
-                        <label for="state" class="block text-sm font-semibold text-gray-700 mb-3">
-                            <i class="fas fa-map text-green-600 mr-2"></i>State
+                        <label for="lga" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-building text-green-600 mr-2"></i>Local Government Area (LGA)
                         </label>
-                        <select id="state" required class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
-                            <option value="">Select State</option>
-                            <option value="Abia">Abia</option>
-                            <option value="Adamawa">Adamawa</option>
-                            <option value="Akwa Ibom">Akwa Ibom</option>
-                            <option value="Anambra">Anambra</option>
-                            <option value="Bauchi">Bauchi</option>
-                            <option value="Bayelsa">Bayelsa</option>
-                            <option value="Benue">Benue</option>
-                            <option value="Borno">Borno</option>
-                            <option value="Cross River">Cross River</option>
-                            <option value="Delta">Delta</option>
-                            <option value="Ebonyi">Ebonyi</option>
-                            <option value="Edo">Edo</option>
-                            <option value="Ekiti">Ekiti</option>
-                            <option value="Enugu">Enugu</option>
-                            <option value="FCT">Federal Capital Territory</option>
-                            <option value="Gombe">Gombe</option>
-                            <option value="Imo">Imo</option>
-                            <option value="Jigawa">Jigawa</option>
-                            <option value="Kaduna">Kaduna</option>
-                            <option value="Kano">Kano</option>
-                            <option value="Katsina">Katsina</option>
-                            <option value="Kebbi">Kebbi</option>
-                            <option value="Kogi">Kogi</option>
-                            <option value="Kwara">Kwara</option>
-                            <option value="Lagos">Lagos</option>
-                            <option value="Nasarawa">Nasarawa</option>
-                            <option value="Niger">Niger</option>
-                            <option value="Ogun">Ogun</option>
-                            <option value="Ondo">Ondo</option>
-                            <option value="Osun">Osun</option>
-                            <option value="Oyo">Oyo</option>
-                            <option value="Plateau">Plateau</option>
-                            <option value="Rivers">Rivers</option>
-                            <option value="Sokoto">Sokoto</option>
-                            <option value="Taraba">Taraba</option>
-                            <option value="Yobe">Yobe</option>
-                            <option value="Zamfara">Zamfara</option>
+                        <select id="lga" required class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                            <option value="">Select LGA</option>
+                            <option value="Agege">Agege</option>
+                            <option value="Ajeromi-Ifelodun">Ajeromi-Ifelodun</option>
+                            <option value="Alimosho">Alimosho</option>
+                            <option value="Amuwo-Odofin">Amuwo-Odofin</option>
+                            <option value="Apapa">Apapa</option>
+                            <option value="Badagry">Badagry</option>
+                            <option value="Epe">Epe</option>
+                            <option value="Eti-Osa">Eti-Osa</option>
+                            <option value="Ibeju-Lekki">Ibeju-Lekki</option>
+                            <option value="Ifako-Ijaiye">Ifako-Ijaiye</option>
+                            <option value="Ikeja">Ikeja</option>
+                            <option value="Ikorodu">Ikorodu</option>
+                            <option value="Kosofe">Kosofe</option>
+                            <option value="Lagos Island">Lagos Island</option>
+                            <option value="Lagos Mainland">Lagos Mainland</option>
+                            <option value="Mushin">Mushin</option>
+                            <option value="Ojo">Ojo</option>
+                            <option value="Shomolu">Shomolu</option>
+                            <option value="Oshodi-Isolo">Oshodi-Isolo</option>
+                            <option value="Surulere">Surulere</option>
                         </select>
-                    </div>
-
-                    <!-- GPS Detection -->
-                    <div class="form-floating">
-                        <div class="flex gap-4 items-center">
-                            <button type="button" id="detectLocationBtn" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center">
-                                <i class="fas fa-crosshairs mr-2"></i>Auto-detect My Location
-                                <div id="locationSpinner" class="hidden ml-2">
-                                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                </div>
-                            </button>
-                        </div>
-                        <div id="gpsDisplay" class="hidden mt-3 bg-green-50 border border-green-200 rounded-xl p-3">
-                            <div class="flex items-center">
-                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                                <span id="gpsCoords" class="text-green-700 font-medium text-sm"></span>
-                            </div>
-                        </div>
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-info-circle text-gray-500 mr-1"></i>Auto-detected from GPS or select manually if GPS unavailable
+                        </p>
                     </div>
 
                     <!-- Description -->
@@ -977,6 +989,22 @@
             }, 'image/jpeg', 0.8);
         });
 
+        // Retake photo
+        document.getElementById('retakeBtn').addEventListener('click', function() {
+            // Clear the current preview and canvas, reset to camera mode
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('cameraCanvas');
+            
+            // Clear canvas
+            canvas.width = 0;
+            canvas.height = 0;
+            
+            // Restart video stream
+            if (currentStream) {
+                video.play();
+            }
+        });
+
         // Cancel camera
         document.getElementById('cancelCameraBtn').addEventListener('click', function() {
             stopCamera();
@@ -993,18 +1021,54 @@
             document.getElementById('cameraControls').classList.add('hidden');
         }
 
+        // Lagos LGA coordinate boundaries (approximate)
+        const lagosLGABoundaries = {
+            'Agege': { lat: [6.58, 6.65], lng: [3.34, 3.40] },
+            'Ajeromi-Ifelodun': { lat: [6.48, 6.58], lng: [3.32, 3.40] },
+            'Alimosho': { lat: [6.60, 6.72], lng: [3.28, 3.42] },
+            'Amuwo-Odofin': { lat: [6.42, 6.50], lng: [3.12, 3.28] },
+            'Apapa': { lat: [6.40, 6.48], lng: [3.32, 3.38] },
+            'Badagry': { lat: [6.40, 6.52], lng: [2.80, 3.02] },
+            'Epe': { lat: [6.50, 6.65], lng: [3.92, 4.15] },
+            'Eti-Osa': { lat: [6.42, 6.55], lng: [3.58, 3.75] },
+            'Ibeju-Lekki': { lat: [6.45, 6.60], lng: [3.75, 4.02] },
+            'Ifako-Ijaiye': { lat: [6.65, 6.72], lng: [3.35, 3.42] },
+            'Ikeja': { lat: [6.57, 6.68], lng: [3.32, 3.42] },
+            'Ikorodu': { lat: [6.55, 6.68], lng: [3.48, 3.62] },
+            'Kosofe': { lat: [6.48, 6.58], lng: [3.52, 3.62] },
+            'Lagos Island': { lat: [6.40, 6.50], lng: [3.38, 3.48] },
+            'Lagos Mainland': { lat: [6.48, 6.58], lng: [3.38, 3.50] },
+            'Mushin': { lat: [6.60, 6.70], lng: [3.32, 3.42] },
+            'Ojo': { lat: [6.48, 6.60], lng: [3.08, 3.22] },
+            'Oshodi-Isolo': { lat: [6.55, 6.65], lng: [3.42, 3.55] },
+            'Shomolu': { lat: [6.52, 6.62], lng: [3.42, 3.52] },
+            'Surulere': { lat: [6.52, 6.62], lng: [3.32, 3.42] }
+        };
+
+        // Function to determine LGA from coordinates
+        function getLGAFromCoordinates(lat, lng) {
+            for (const [lga, bounds] of Object.entries(lagosLGABoundaries)) {
+                if (lat >= bounds.lat[0] && lat <= bounds.lat[1] &&
+                    lng >= bounds.lng[0] && lng <= bounds.lng[1]) {
+                    return lga;
+                }
+            }
+            return null; // Not in any known LGA
+        }
+
         // Auto-detect location
         document.getElementById('detectLocationBtn').addEventListener('click', function() {
             const button = this;
             const spinner = document.getElementById('locationSpinner');
             const gpsDisplay = document.getElementById('gpsDisplay');
             const gpsCoords = document.getElementById('gpsCoords');
+            const detectedLGA = document.getElementById('detectedLGA');
             
             button.disabled = true;
             spinner.classList.remove('hidden');
             
             if (!navigator.geolocation) {
-                alert('Geolocation is not supported by this browser.');
+                alert('❌ Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
                 button.disabled = false;
                 spinner.classList.add('hidden');
                 return;
@@ -1018,29 +1082,39 @@
                     gpsCoordinates = { lat, lng };
                     
                     // Display GPS coordinates
-                    gpsCoords.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                    gpsCoords.textContent = `📍 Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                    
+                    // Determine LGA from coordinates
+                    const detectedLGAName = getLGAFromCoordinates(lat, lng);
+                    
+                    if (detectedLGAName) {
+                        detectedLGA.innerHTML = `<strong>🏘️ LGA Detected:</strong> ${detectedLGAName}`;
+                        document.getElementById('lga').value = detectedLGAName;
+                    } else {
+                        detectedLGA.innerHTML = `<strong>⚠️ Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
+                    }
+                    
                     gpsDisplay.classList.remove('hidden');
                     
-                    // Try to get address using reverse geocoding (simplified)
-                    reverseGeocode(lat, lng);
-                    
+                    // Update button appearance
                     button.disabled = false;
                     spinner.classList.add('hidden');
-                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Location Detected';
-                    button.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-                    button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    button.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Location Detected Successfully';
+                    button.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-700', 'hover:to-blue-800');
+                    button.classList.add('from-green-600', 'to-green-700', 'hover:from-green-700', 'hover:to-green-800');
+                    button.disabled = true;
                 },
                 function(error) {
-                    let message = 'Unable to get your location. ';
+                    let message = '❌ Unable to get your location.\n\n';
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            message += 'Please allow location access.';
+                            message += 'Please allow location access in your browser settings and try again.\n\nOr manually enter your location below.';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            message += 'Location information unavailable.';
+                            message += 'Location information is not available. Please check your GPS and try again.\n\nOr manually enter your location below.';
                             break;
                         case error.TIMEOUT:
-                            message += 'Location request timed out.';
+                            message += 'Location request timed out. Please try again in an area with better GPS signal.\n\nOr manually enter your location below.';
                             break;
                     }
                     alert(message);
@@ -1049,26 +1123,11 @@
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
+                    timeout: 15000,
+                    maximumAge: 0
                 }
             );
         });
-
-        // Simplified reverse geocoding
-        function reverseGeocode(lat, lng) {
-            const locationInput = document.getElementById('location');
-            const stateSelect = document.getElementById('state');
-            
-            // Auto-populate state based on GPS (simplified)
-            if (lat >= 6.0 && lat <= 7.0 && lng >= 2.5 && lng <= 4.5) {
-                stateSelect.value = 'Lagos';
-            }
-            
-            if (!locationInput.value.trim()) {
-                locationInput.value = `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-            }
-        }
 
         // Photo preview functionality
         document.getElementById('photoInput').addEventListener('change', function(e) {
@@ -1097,10 +1156,19 @@
             spinner.classList.remove('hidden');
 
             try {
-                // Combine state and location
-                const state = document.getElementById('state').value;
-                const location = document.getElementById('location').value;
-                const fullLocation = state ? `${location}, ${state}` : location;
+                // Validate required fields
+                const location = document.getElementById('location').value.trim();
+                const lga = document.getElementById('lga').value;
+                
+                if (!location) {
+                    throw new Error('Please enter a location description');
+                }
+                if (!lga) {
+                    throw new Error('Please select your Local Government Area (LGA)');
+                }
+                
+                // Combine location description with LGA
+                const fullLocation = `${location}, ${lga} LGA, Lagos`;
                 
                 // Get image file and convert to base64
                 const photoFile = document.getElementById('photoInput').files[0];
@@ -1119,9 +1187,12 @@
                 // Prepare JSON payload for integrated_backend
                 const payload = {
                     location: fullLocation,
+                    lga: lga,
+                    state: 'Lagos',
                     description: document.getElementById('description').value,
                     contact: document.getElementById('phone').value,
-                    photo: photoBase64
+                    photo: photoBase64,
+                    gps_coordinates: gpsCoordinates // Include GPS coordinates if detected
                 };
 
                 const response = await fetch('http://localhost:5000/api/submit-report', {

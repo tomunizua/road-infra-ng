@@ -1,9 +1,0 @@
-names:
-- pothole
-- longitudinal_crack
-- lateral_crack
-nc: 3
-path: road_damage_data
-test: images/test
-train: images/train
-val: images/val

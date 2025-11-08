@@ -29,6 +29,19 @@ except ImportError as e:
     print("   System will work without AI analysis")
     initialize_pipeline = None
 
+# Import budget optimization API
+try:
+    import sys
+    budget_dir = os.path.join(os.path.dirname(__file__), '..', 'budget_optimization')
+    if budget_dir not in sys.path:
+        sys.path.insert(0, budget_dir)
+    from budget_api import create_budget_app
+    print("✅ Budget optimization API imported successfully")
+except ImportError as e:
+    print(f"⚠️  Budget optimization not found: {e}")
+    print("   System will work without budget optimization")
+    create_budget_app = None
+
 app = Flask(__name__)
 
 # Configure CORS properly
@@ -39,6 +52,11 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
+
+# Register budget optimization API
+if create_budget_app:
+    create_budget_app(app)
+    print("✅ Budget optimization endpoints registered")
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -65,8 +83,9 @@ if initialize_pipeline:
         # Update these paths for your actual models
         ROAD_CLASSIFIER_PATH = "tomunizua/road-classification_filter"
         
-        # Use proper path resolution for YOLO model
-        YOLO_MODEL_PATH = "models/best.pt"  # UPDATE THIS PATH
+        # Use absolute path for YOLO model
+        BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+        YOLO_MODEL_PATH = os.path.join(os.path.dirname(BASE_PATH), "models", "best.pt")
         
         # Verify the model file exists
         if not os.path.exists(YOLO_MODEL_PATH):
@@ -88,6 +107,16 @@ else:
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Serve uploaded images
+@app.route('/api/uploads/<filename>', methods=['GET'])
+def serve_upload(filename):
+    """Serve uploaded images"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        print(f"Error serving file {filename}: {e}")
+        return jsonify({'error': 'File not found'}), 404
 
 def generate_tracking_number():
     """Generate unique tracking number"""
@@ -136,7 +165,7 @@ def submit_report():
         print(f"📊 Received data keys: {list(data.keys())}")
         
         # Validate required fields
-        required_fields = ['location', 'description']
+        required_fields = ['location', 'description', 'lga']
         for field in required_fields:
             if not data.get(field):
                 print(f"❌ Missing required field: {field}")
@@ -158,18 +187,35 @@ def submit_report():
         if data.get('photo'):
             try:
                 print("📷 Processing image...")
-                # Save uploaded image
+                # Save uploaded image TEMPORARILY for analysis
                 filename = f"{tracking_number}_{secure_filename('report_image.jpg')}"
                 image_path = save_base64_image(data['photo'], filename)
                 image_filename = filename
-                print(f"💾 Image saved as: {filename}")
+                print(f"💾 Image saved temporarily as: {filename}")
                 
                 if image_path and pipeline:
                     print(f"🤖 Running AI analysis on image: {image_path}")
                     
-                    # Run your pipeline analysis
+                    # Run your pipeline analysis (includes road validation as first step)
                     analysis_result = pipeline.analyze_image(image_path)
                     
+                    # 🔴 NEW: Check if image is NOT a road image FIRST
+                    if analysis_result['status'] == 'rejected':
+                        print(f"❌ Image validation failed: {analysis_result.get('message', 'Not a road image')}")
+                        # Delete the temporary image file
+                        if os.path.exists(image_path):
+                            os.remove(image_path)
+                            print(f"🗑️  Deleted temporary file: {filename}")
+                        
+                        # Return error to user WITHOUT saving to database
+                        return jsonify({
+                            'success': False,
+                            'error': 'No road damage image detected',
+                            'message': 'The image does not appear to be a road surface. Please upload a clear image of a road with potential damage.',
+                            'details': analysis_result.get('message', '')
+                        }), 400
+                    
+                    # Continue processing if road validation passed
                     if analysis_result['status'] == 'completed':
                         summary = analysis_result['summary']
                         damage_detected = summary.get('total_damages', 0) > 0
@@ -184,8 +230,17 @@ def submit_report():
                         ai_analysis = json.dumps(analysis_result)
                         
                         print(f"✅ AI Analysis complete: {damage_type} damage, severity: {severity_score}")
+                    elif analysis_result['status'] == 'no_damage':
+                        # Road image but no damage detected - this is valid, save to database
+                        print(f"✅ Road image validated, but no damage detected")
+                        damage_detected = False
+                        damage_type = 'none'
+                        confidence = 0.95
+                        severity_score = 0
+                        estimated_cost = 0
+                        ai_analysis = json.dumps(analysis_result)
                     else:
-                        print(f"⚠️  AI Analysis failed: {analysis_result.get('message', 'Unknown error')}")
+                        print(f"⚠️  AI Analysis inconclusive: {analysis_result.get('message', 'Unknown error')}")
                         damage_detected = False
                         damage_type = 'unknown'
                         confidence = 0.5
@@ -199,12 +254,30 @@ def submit_report():
         
         # Create new report using SQLAlchemy model
         print("💾 Creating database record...")
+        
+        # Extract GPS coordinates and LGA
+        gps_latitude = None
+        gps_longitude = None
+        gps_detected = False
+        
+        if data.get('gps_coordinates'):
+            gps_data = data['gps_coordinates']
+            gps_latitude = gps_data.get('latitude')
+            gps_longitude = gps_data.get('longitude')
+            gps_detected = True
+            print(f"📍 GPS detected: Lat={gps_latitude}, Lon={gps_longitude}")
+        
         new_report = Report(
             tracking_number=tracking_number,
             image_filename=image_filename or '',
             location=data['location'],
             description=data['description'],
             phone=data.get('contact', ''),
+            state=data.get('state', 'Lagos'),
+            lga=data.get('lga'),
+            gps_latitude=gps_latitude,
+            gps_longitude=gps_longitude,
+            gps_detected=gps_detected,
             damage_detected=damage_detected,
             damage_type=damage_type,
             confidence=confidence,
@@ -277,6 +350,9 @@ def track_report(tracking_number):
             'tracking_number': report.tracking_number,
             'location': report.location,
             'status': report.status,
+            'state': report.state,
+            'lga': report.lga,
+            'gps_detected': report.gps_detected,
             'created_at': report.created_at.isoformat() if report.created_at else None,
             'updated_at': report.updated_at.isoformat() if report.updated_at else None
         }
@@ -299,17 +375,34 @@ def get_admin_reports():
         # Convert to dictionaries with admin-specific formatting
         reports_data = []
         for report in reports:
+            # Construct photo URL - support both old and new image filename formats
+            photo_url = None
+            if report.image_filename:
+                # Ensure filename is clean and sanitized
+                filename = secure_filename(report.image_filename)
+                photo_url = f"http://localhost:5000/api/uploads/{filename}"
+                print(f"📸 Report {report.tracking_number} has image: {filename} -> {photo_url}")
+            
             report_dict = {
                 'id': report.id,
                 'tracking_number': report.tracking_number,
                 'location': report.location,
                 'description': report.description,
                 'phone': report.phone,
+                'contact': report.phone,
                 'image_filename': report.image_filename,
+                'photo_url': photo_url,
+                'state': report.state,
+                'lga': report.lga,
+                'gps': f"{report.gps_latitude}, {report.gps_longitude}" if report.gps_latitude and report.gps_longitude else None,
+                'gps_detected': report.gps_detected,
+                'gps_latitude': report.gps_latitude,
+                'gps_longitude': report.gps_longitude,
                 'damage_detected': report.damage_detected,
                 'damage_type': report.damage_type,
                 'damage_types': [report.damage_type] if report.damage_type and report.damage_type != 'none' else [],
                 'confidence': report.confidence,
+                'ai_confidence': report.confidence,
                 'severity_score': report.severity_score / 100.0,  # Convert back to 0-1 scale for consistency
                 'severity_level': get_severity_level(report.severity_score),
                 'estimated_cost': report.estimated_cost,
@@ -627,9 +720,9 @@ if __name__ == '__main__':
     print(f"🌐 Server starting on http://localhost:5000")
     print(f"📋 Test endpoint: http://localhost:5000/api/test")
     print(f"💚 Health check: http://localhost:5000/api/health")
-    print(f"👥 Citizen Portal: http://localhost:5000/redo.html")
+    print(f"👥 Citizen Portal: http://localhost:5000/citizen_portal.html")
     print(f"📊 Admin Dashboard: http://localhost:5000/admin.html")
     print("="*60)
     
-    # Run the app
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    # Run the app (debug=False for production, no auto-reloader causing page refreshes)
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)

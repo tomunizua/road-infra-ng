@@ -1,6 +1,7 @@
 ﻿data/
 *.h5
 *.keras
+*.pt
 models/
 __pycache__/
 *.pyc
@@ -9,5 +10,13 @@ venv/
 instance/
 uploads/
 roadwatch.db
+road_reports.db
 road_damage_data/
 road_reports.db
+rdd2022_raw/
+rdd2022_processed/
+**/runs/
+.zencoder/
+pothole_dataset_raw/
+combined_balanced_dataset/
+optuna_trials/

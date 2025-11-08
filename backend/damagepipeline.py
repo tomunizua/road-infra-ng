@@ -5,7 +5,12 @@ import torchvision.models as models
 from PIL import Image
 import numpy as np
 import time
+import logging
 from ultralytics import YOLO
+
+# Configure logging for debugging
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(name)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class DamageSeverityCalculator:
     def __init__(self):
@@ -37,33 +42,70 @@ class DamageSeverityCalculator:
     
     def calculate_normalized_area(self, bbox, img_width, img_height):
         """Calculate detection area as percentage of image"""
-        x1, y1, x2, y2 = bbox
-        detection_area = (x2 - x1) * (y2 - y1)
-        image_area = img_width * img_height
-        return detection_area / image_area
+        try:
+            x1, y1, x2, y2 = bbox
+            
+            # Validate coordinates
+            if x2 <= x1 or y2 <= y1:
+                logger.warning(f"Invalid bbox coordinates: {bbox}. x2 <= x1 or y2 <= y1")
+                return 0.001  # Return small area for invalid bbox
+            
+            detection_area = (x2 - x1) * (y2 - y1)
+            image_area = img_width * img_height
+            
+            if image_area == 0:
+                logger.warning(f"Image area is zero: {img_width}x{img_height}")
+                return 0.001
+            
+            area_ratio = detection_area / image_area
+            logger.debug(f"Area calculation - Detection: {detection_area:.2f}px², Image: {image_area}px², Ratio: {area_ratio:.4f}")
+            
+            return area_ratio
+        except Exception as e:
+            logger.error(f"Error calculating normalized area for bbox {bbox}, image dims {img_width}x{img_height}: {e}")
+            return 0.001
     
     def calculate_detection_severity(self, detection, img_width, img_height):
         """Calculate severity score for single detection"""
-        damage_type = detection['class']
-        confidence = detection['confidence']
-        bbox = detection['bbox']
-        
-        if damage_type not in self.damage_weights:
-            return 0.5  # Default for unknown types
-        
-        weights = self.damage_weights[damage_type]
-        area_ratio = self.calculate_normalized_area(bbox, img_width, img_height)
-        
-        # Severity calculation
-        severity = weights['base_severity']
-        severity += area_ratio * weights['area_multiplier']
-        severity *= confidence  # Scale by detection confidence
-        
-        return min(severity, 1.0)  # Cap at 1.0
+        try:
+            damage_type = detection['class']
+            confidence = detection['confidence']
+            bbox = detection['bbox']
+            
+            logger.debug(f"Calculating severity for {damage_type} - Confidence: {confidence:.3f}, BBox: {bbox}")
+            
+            if damage_type not in self.damage_weights:
+                logger.warning(f"Unknown damage type: {damage_type}. Using default severity 0.5")
+                return 0.5  # Default for unknown types
+            
+            weights = self.damage_weights[damage_type]
+            area_ratio = self.calculate_normalized_area(bbox, img_width, img_height)
+            
+            # Severity calculation
+            severity = weights['base_severity']
+            logger.debug(f"  Base severity ({damage_type}): {severity:.3f}")
+            
+            area_contribution = area_ratio * weights['area_multiplier']
+            severity += area_contribution
+            logger.debug(f"  + Area contribution ({area_ratio:.4f} * {weights['area_multiplier']}): {area_contribution:.3f} = {severity:.3f}")
+            
+            severity *= confidence  # Scale by detection confidence
+            logger.debug(f"  * Confidence {confidence:.3f} = {severity:.3f}")
+            
+            final_severity = min(severity, 1.0)  # Cap at 1.0
+            logger.debug(f"  Final severity (capped): {final_severity:.3f}")
+            
+            return final_severity
+        except Exception as e:
+            logger.error(f"Error calculating detection severity for {detection}: {e}")
+            return 0.5
     
     def calculate_image_severity(self, detections, img_width, img_height):
         """Calculate overall severity for image with multiple detections"""
+        logger.info(f"Starting image severity calculation for {len(detections)} detections | Image: {img_width}x{img_height}")
+        
         if not detections:
+            logger.info("No detections found - returning zero severity")
             return {
                 'severity_level': 'none',
                 'severity_score': 0.0,
@@ -80,10 +122,13 @@ class DamageSeverityCalculator:
                 damage_groups[damage_type] = []
             damage_groups[damage_type].append(detection)
         
+        logger.info(f"Damage groups: {[(t, len(d)) for t, d in damage_groups.items()]}")
+        
         # Calculate per-type severity
         type_severities = {}
         for damage_type, type_detections in damage_groups.items():
             if damage_type in self.damage_weights:
+                logger.info(f"Processing {damage_type}: {len(type_detections)} detection(s)")
                 weights = self.damage_weights[damage_type]
                 
                 # Individual severity scores
@@ -92,33 +137,45 @@ class DamageSeverityCalculator:
                     for det in type_detections
                 ]
                 
+                logger.debug(f"  Individual scores for {damage_type}: {[f'{s:.3f}' for s in individual_scores]}")
+                
                 # Aggregate severity for this type
                 max_individual = max(individual_scores)
                 count_factor = 1 + (len(type_detections) - 1) * weights['count_penalty']
                 type_severity = min(max_individual * count_factor, 1.0)
+                
+                logger.info(f"  {damage_type}: max_individual={max_individual:.3f}, count_factor={count_factor:.3f}, final={type_severity:.3f}")
                 
                 type_severities[damage_type] = {
                     'severity': type_severity,
                     'count': len(type_detections),
                     'max_individual': max_individual
                 }
+            else:
+                logger.warning(f"Damage type '{damage_type}' not found in damage_weights")
         
         # Calculate overall severity (weighted by damage type importance)
         if type_severities:
             weighted_sum = 0
             total_weight = 0
             
+            logger.info("Calculating weighted overall severity:")
             for damage_type, metrics in type_severities.items():
                 # Weight by base severity and detection count
                 weight = (self.damage_weights[damage_type]['base_severity'] * 
                          (1 + 0.1 * metrics['count']))
                 
-                weighted_sum += metrics['severity'] * weight
+                contribution = metrics['severity'] * weight
+                weighted_sum += contribution
                 total_weight += weight
+                
+                logger.debug(f"  {damage_type}: severity={metrics['severity']:.3f} * weight={weight:.3f} = {contribution:.3f}")
             
             overall_severity = weighted_sum / total_weight if total_weight > 0 else 0
+            logger.info(f"Overall severity: {weighted_sum:.3f} / {total_weight:.3f} = {overall_severity:.3f}")
         else:
             overall_severity = 0
+            logger.warning("No valid type_severities calculated")
         
         # Classify severity level
         if overall_severity >= self.thresholds['high']:
@@ -134,11 +191,13 @@ class DamageSeverityCalculator:
             severity_level = 'minimal'
             urgency = 'monitoring'
         
+        logger.info(f"Severity classification: {severity_level} (score: {overall_severity:.3f}, thresholds: low={self.thresholds['low']}, medium={self.thresholds['medium']}, high={self.thresholds['high']})")
+        
         # Find dominant damage type
         dominant_damage = max(type_severities.keys(), 
                             key=lambda x: type_severities[x]['severity']) if type_severities else None
         
-        return {
+        result = {
             'severity_level': severity_level,
             'severity_score': round(overall_severity, 3),
             'damage_counts': {k: v['count'] for k, v in type_severities.items()},
@@ -147,6 +206,9 @@ class DamageSeverityCalculator:
             'repair_urgency': urgency,
             'total_detections': len(detections)
         }
+        
+        logger.info(f"Final result: {result}")
+        return result
 
 class RoadDamagePipeline:
     def __init__(self, road_classifier_path, yolo_model_path):
@@ -170,6 +232,10 @@ class RoadDamagePipeline:
     
     def load_road_classifier(self, model_path):
         """Load your road classifier from HuggingFace"""
+        # HuggingFace model is disabled for now
+        print(f"Road classifier (HuggingFace) is disabled - skipping load")
+        return None
+        
         try:
             print(f"Loading road classifier from: {model_path}")
             
@@ -295,37 +361,65 @@ class RoadDamagePipeline:
             dict: Detection results
         """
         try:
-            # Run YOLO detection
-            results = self.yolo_model.predict(image_path, conf=0.15, verbose=False)
+            logger.info(f"Starting YOLO damage detection on: {image_path}")
+            
+            # Run YOLO detection with confidence threshold increased from 0.15 to 0.5
+            # Higher threshold = fewer false positives, more reliable detections
+            CONFIDENCE_THRESHOLD = 0.5  # Increased from 0.15 for better accuracy
+            logger.debug(f"Using confidence threshold: {CONFIDENCE_THRESHOLD}")
+            
+            results = self.yolo_model.predict(image_path, conf=CONFIDENCE_THRESHOLD, verbose=False)
+            logger.debug(f"YOLO prediction completed. Results: {len(results)} image(s)")
             
             # Parse results
             detections = []
-            if len(results) > 0 and len(results[0].boxes) > 0:
-                img_height, img_width = results[0].orig_shape
-                
-                for box in results[0].boxes:
-                    detection = {
-                        'class': self.yolo_model.names[int(box.cls[0])],
-                        'confidence': float(box.conf[0]),
-                        'bbox': box.xyxy[0].cpu().numpy().tolist(),
-                        'center': [
-                            float((box.xyxy[0][0] + box.xyxy[0][2]) / 2),
-                            float((box.xyxy[0][1] + box.xyxy[0][3]) / 2)
-                        ]
-                    }
-                    detections.append(detection)
-            else:
-                img_height, img_width = 480, 640  # Default
+            img_height, img_width = 480, 640  # Default values
             
-            return {
+            if len(results) > 0:
+                img_height, img_width = results[0].orig_shape
+                logger.info(f"Image dimensions: {img_width}x{img_height}")
+                
+                if len(results[0].boxes) > 0:
+                    logger.info(f"Found {len(results[0].boxes)} detection(s)")
+                    
+                    for i, box in enumerate(results[0].boxes):
+                        try:
+                            damage_class = self.yolo_model.names[int(box.cls[0])]
+                            confidence = float(box.conf[0])
+                            bbox = box.xyxy[0].cpu().numpy().tolist()
+                            
+                            detection = {
+                                'class': damage_class,
+                                'confidence': confidence,
+                                'bbox': bbox,
+                                'center': [
+                                    float((box.xyxy[0][0] + box.xyxy[0][2]) / 2),
+                                    float((box.xyxy[0][1] + box.xyxy[0][3]) / 2)
+                                ]
+                            }
+                            detections.append(detection)
+                            logger.debug(f"  Detection {i+1}: {damage_class} (confidence: {confidence:.3f}, bbox: {bbox})")
+                        except Exception as e:
+                            logger.error(f"Error parsing detection {i}: {e}")
+                            continue
+                else:
+                    logger.info("No detections found (boxes empty)")
+            else:
+                logger.warning("No results returned from YOLO prediction")
+            
+            result = {
                 'detections': detections,
                 'image_dimensions': [img_width, img_height],
                 'total_detections': len(detections),
-                'damage_types': list(set([d['class'] for d in detections]))
+                'damage_types': list(set([d['class'] for d in detections])),
+                'confidence_threshold': CONFIDENCE_THRESHOLD
             }
             
+            logger.info(f"Damage detection result: {len(detections)} detections, types: {result['damage_types']}")
+            return result
+            
         except Exception as e:
-            print(f"Error in damage detection: {e}")
+            logger.error(f"Critical error in damage detection: {e}", exc_info=True)
             return {
                 'detections': [],
                 'image_dimensions': [640, 480],
@@ -351,6 +445,9 @@ class RoadDamagePipeline:
             dict: Complete analysis results
         """
         analysis_start_time = time.time()
+        logger.info("="*80)
+        logger.info(f"PIPELINE START: Analyzing image: {image_path}")
+        logger.info("="*80)
         
         result = {
             'image_path': image_path,
@@ -360,17 +457,23 @@ class RoadDamagePipeline:
         
         try:
             # Stage 1: Road Classification
+            logger.info("STAGE 1: Road Classification")
             road_result = self.is_road_image(image_path)
             result['pipeline_stages']['road_classification'] = road_result
+            logger.info(f"  Result: is_road={road_result['is_road']}, confidence={road_result['confidence']:.3f}")
             
             if not road_result['is_road']:
                 result['status'] = 'rejected'
                 result['message'] = f"Non-road surface detected (confidence: {road_result['confidence']:.1%})"
+                logger.warning(f"REJECTED: {result['message']}")
                 return result
             
             # Stage 2: Damage Detection
+            logger.info("STAGE 2: Damage Detection")
             damage_result = self.detect_damage(image_path)
             result['pipeline_stages']['damage_detection'] = damage_result
+            logger.info(f"  Found {damage_result['total_detections']} damage detection(s)")
+            logger.info(f"  Damage types: {damage_result['damage_types']}")
             
             if damage_result['total_detections'] == 0:
                 result['status'] = 'no_damage'
@@ -380,15 +483,20 @@ class RoadDamagePipeline:
                     'severity_score': 0.0,
                     'repair_urgency': 'none'
                 }
+                logger.info("NO DAMAGE: Ending pipeline")
                 return result
             
             # Stage 3: Severity Assessment
+            logger.info("STAGE 3: Severity Assessment")
             severity_result = self.calculate_severity(
                 damage_result['detections'],
                 damage_result['image_dimensions'][0],
                 damage_result['image_dimensions'][1]
             )
             result['pipeline_stages']['severity_assessment'] = severity_result
+            logger.info(f"  Severity Level: {severity_result['severity_level']}")
+            logger.info(f"  Severity Score: {severity_result['severity_score']}")
+            logger.info(f"  Repair Urgency: {severity_result['repair_urgency']}")
             
             # Final result compilation
             result['status'] = 'completed'
@@ -405,9 +513,14 @@ class RoadDamagePipeline:
             result['recommendations'] = self.generate_recommendations(severity_result)
             result['processing_time'] = f"{time.time() - analysis_start_time:.2f}s"
             
+            logger.info("="*80)
+            logger.info(f"PIPELINE COMPLETE: Status=COMPLETED | Score={severity_result['severity_score']} | Time={result['processing_time']}")
+            logger.info("="*80)
+            
             return result
             
         except Exception as e:
+            logger.error(f"PIPELINE ERROR: {str(e)}", exc_info=True)
             result['status'] = 'error'
             result['message'] = f"Pipeline error: {str(e)}"
             return result
@@ -455,8 +568,10 @@ def initialize_pipeline(road_classifier_path=None, yolo_model_path=None):
             road_classifier_path = "tomunizua/road-classification_filter"
         
         if yolo_model_path is None:
-            # You need to set this to your actual YOLO model path
-            yolo_model_path = "models/best.pt"  # UPDATE THIS PATH
+            # Use absolute path for YOLO model
+            import os
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            yolo_model_path = os.path.join(base_path, "models", "best.pt")
         
         print("Initializing Road Damage Analysis Pipeline...")
         print(f"Road Classifier: {road_classifier_path}")
