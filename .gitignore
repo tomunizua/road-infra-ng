@@ -20,3 +20,5 @@ rdd2022_processed/
 pothole_dataset_raw/
 combined_balanced_dataset/
 optuna_trials/
+optuna_trials_local/
+rdd_sampled_24k_local
