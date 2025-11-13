@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import os
+import sys
 import glob
+
+# Add parent directory to path to import backend modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from integrated_backend import pipeline
 
 # Find a test image

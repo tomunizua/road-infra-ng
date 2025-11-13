@@ -704,25 +704,28 @@ if __name__ == '__main__':
             # Create all database tables
             db.create_all()
             print("✅ Database tables created successfully")
-            
+
             # Check if we have any data
             report_count = Report.query.count()
             print(f"📊 Current reports in database: {report_count}")
-            
+
         except Exception as e:
             print(f"❌ Database initialization failed: {e}")
             exit(1)
-    
+
+    # Get port from environment variable (for deployment platforms) or use 5000 for local
+    port = int(os.environ.get('PORT', 5000))
+
     print("\n" + "="*60)
     print("🚀 Starting RoadWatch Nigeria Backend...")
     print(f"🤖 Pipeline status: {'✅ Loaded' if pipeline else '⚠️ Not loaded'}")
     print(f"🗄️  Database: SQLAlchemy with SQLite")
-    print(f"🌐 Server starting on http://localhost:5000")
-    print(f"📋 Test endpoint: http://localhost:5000/api/test")
-    print(f"💚 Health check: http://localhost:5000/api/health")
-    print(f"👥 Citizen Portal: http://localhost:5000/citizen_portal.html")
-    print(f"📊 Admin Dashboard: http://localhost:5000/admin.html")
+    print(f"🌐 Server starting on http://0.0.0.0:{port}")
+    print(f"📋 Test endpoint: http://localhost:{port}/api/test")
+    print(f"💚 Health check: http://localhost:{port}/api/health")
+    print(f"👥 Citizen Portal: http://localhost:{port}/citizen_portal.html")
+    print(f"📊 Admin Dashboard: http://localhost:{port}/admin.html")
     print("="*60)
-    
+
     # Run the app (debug=False for production, no auto-reloader causing page refreshes)
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
+    app.run(debug=False, host='0.0.0.0', port=port, threaded=True)

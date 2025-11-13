@@ -4,7 +4,12 @@ Tests that non-road images are rejected BEFORE saving to database
 """
 
 import os
+import sys
 import json
+
+# Add parent directory to path to import backend modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from damagepipeline import initialize_pipeline
 
 def test_validation():

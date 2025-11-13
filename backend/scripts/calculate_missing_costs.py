@@ -4,6 +4,12 @@ Script to calculate and update estimated costs for existing reports
 Run this after starting the backend to ensure all reports have costs
 """
 
+import os
+import sys
+
+# Add parent directory to path to import backend modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database import db, Report
 from integrated_backend import app, estimate_repair_cost
 

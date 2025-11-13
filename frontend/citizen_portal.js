@@ -306,6 +306,12 @@ document.getElementById('reportForm').addEventListener('submit', async function(
     spinner.classList.remove('hidden');
 
     try {
+        // Validate consent checkbox
+        const consentCheckbox = document.getElementById('consentCheckbox');
+        if (!consentCheckbox.checked) {
+            throw new Error('Please accept the privacy policy and terms of service to submit your report');
+        }
+
         // Validate required fields
         const location = document.getElementById('location').value.trim();
         const lga = document.getElementById('lga').value;
