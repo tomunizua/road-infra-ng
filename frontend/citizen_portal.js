@@ -604,7 +604,7 @@ function generateTimelineSteps(data) {
                 <div class="flex-1">
                     <p class="font-semibold text-gray-900">${step.title}</p>
                     <p class="text-sm text-gray-600">${step.desc}</p>
-                    ${step.timestamp ? `<p class="text-xs text-gray-500 mt-1">${step.timestamp}</p>` : ''}
+                    ${step.timestamp ? '<p class="text-xs text-gray-500 mt-1">' + step.timestamp + '</p>' : ''}
                 </div>
             </div>
         `;
