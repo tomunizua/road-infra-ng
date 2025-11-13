@@ -21,7 +21,7 @@ if not BASE_URL:
 
 # Import the database models
 try:
-    from database import db, Report, ReportSchema
+    from api.database import db, Report, ReportSchema
     print("Database models imported successfully")
 except ImportError as e:
     print(f"Failed to import database models: {e}")

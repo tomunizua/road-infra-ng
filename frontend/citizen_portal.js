@@ -1,3 +1,6 @@
+// --- API Configuration ---
+const RENDER_API_BASE = 'https://roadwatch-ng.onrender.com'; 
+
 // Mobile menu toggle
 function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
@@ -60,7 +63,7 @@ function restoreTrackingNumberFromStorage() {
             successMessage.style.visibility = 'visible';
             successMessage.style.opacity = '1';
 
-            console.log('✅ Restored tracking number from storage:', savedTrackingNumber);
+            console.log('Restored tracking number from storage:', savedTrackingNumber);
 
             // Scroll to it after a short delay
             setTimeout(() => {
@@ -218,7 +221,7 @@ document.getElementById('detectLocationBtn').addEventListener('click', function(
     spinner.classList.remove('hidden');
 
     if (!navigator.geolocation) {
-        alert('❌ Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
+        alert('Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
         button.disabled = false;
         spinner.classList.add('hidden');
         return;
@@ -232,16 +235,16 @@ document.getElementById('detectLocationBtn').addEventListener('click', function(
             gpsCoordinates = { lat, lng };
 
             // Display GPS coordinates
-            gpsCoords.textContent = `📍 Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+            gpsCoords.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
 
             // Determine LGA from coordinates
             const detectedLGAName = getLGAFromCoordinates(lat, lng);
 
             if (detectedLGAName) {
-                detectedLGA.innerHTML = `<strong>🏘️ LGA Detected:</strong> ${detectedLGAName}`;
+                detectedLGA.innerHTML = `<strong>LGA Detected:</strong> ${detectedLGAName}`;
                 document.getElementById('lga').value = detectedLGAName;
             } else {
-                detectedLGA.innerHTML = `<strong>⚠️ Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
+                detectedLGA.innerHTML = `<strong>Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
             }
 
             gpsDisplay.classList.remove('hidden');
@@ -249,13 +252,13 @@ document.getElementById('detectLocationBtn').addEventListener('click', function(
             // Update button appearance
             button.disabled = false;
             spinner.classList.add('hidden');
-            button.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Location Detected Successfully';
+            button.innerHTML = 'Location Detected Successfully';
             button.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-700', 'hover:to-blue-800');
             button.classList.add('from-green-600', 'to-green-700', 'hover:from-green-700', 'hover:to-green-800');
             button.disabled = true;
         },
         function(error) {
-            let message = '❌ Unable to get your location.\n\n';
+            let message = 'Unable to get your location.\n\n';
             switch(error.code) {
                 case error.PERMISSION_DENIED:
                     message += 'Please allow location access in your browser settings and try again.\n\nOr manually enter your location below.';
@@ -352,7 +355,8 @@ document.getElementById('reportForm').addEventListener('submit', async function(
             gps_coordinates: gpsCoordinates // Include GPS coordinates if detected
         };
 
-        const response = await fetch('http://localhost:5000/api/submit-report', {
+        // --- UPDATED API CALL TO USE LIVE RENDER BASE URL ---
+        const response = await fetch(`${RENDER_API_BASE}/api/submit-report`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -366,27 +370,27 @@ document.getElementById('reportForm').addEventListener('submit', async function(
             throw new Error(result.error || 'Server error');
         }
 
-        console.log('✅ Report submitted successfully:', result);
-        console.log('📋 Full response object:', JSON.stringify(result, null, 2));
-        console.log('🔢 Tracking number value:', result.tracking_number);
-        console.log('🔢 Type of tracking_number:', typeof result.tracking_number);
+        console.log('Report submitted successfully:', result);
+        console.log('Full response object:', JSON.stringify(result, null, 2));
+        console.log('Tracking number value:', result.tracking_number);
+        console.log('Type of tracking_number:', typeof result.tracking_number);
 
         // Show success message with tracking number
         const trackingNumberElement = document.getElementById('trackingNumber');
-        console.log('📍 Tracking number element found:', trackingNumberElement);
-        console.log('📍 Element ID:', trackingNumberElement?.id);
+        console.log('Tracking number element found:', trackingNumberElement);
+        console.log('Element ID:', trackingNumberElement?.id);
 
         if (result.tracking_number) {
             trackingNumberElement.textContent = result.tracking_number;
-            console.log('✅ Setting tracking number to:', result.tracking_number);
-            console.log('✅ Element text content is now:', trackingNumberElement.textContent);
+            console.log('Setting tracking number to:', result.tracking_number);
+            console.log('Element text content is now:', trackingNumberElement.textContent);
 
             // ===== SAVE TRACKING NUMBER TO LOCALSTORAGE =====
             localStorage.setItem('lastTrackingNumber', result.tracking_number);
             localStorage.setItem('lastTrackingNumberTime', Date.now().toString());
-            console.log('💾 Saved tracking number to localStorage');
+            console.log('Saved tracking number to localStorage');
         } else {
-            console.error('❌ No tracking_number in response!');
+            console.error('No tracking_number in response!');
             trackingNumberElement.textContent = 'N/A';
         }
         const successMessage = document.getElementById('successMessage');
@@ -404,26 +408,26 @@ document.getElementById('reportForm').addEventListener('submit', async function(
 
         // Force a repaint
         void successMessage.offsetHeight;
-        console.log('✅ Success message display:', successMessage.style.display);
-        console.log('✅ Success message visibility:', successMessage.style.visibility);
-        console.log('✅ Success message opacity:', successMessage.style.opacity);
+        console.log('Success message display:', successMessage.style.display);
+        console.log('Success message visibility:', successMessage.style.visibility);
+        console.log('Success message opacity:', successMessage.style.opacity);
 
         // PREVENT ANYTHING FROM HIDING THE MESSAGE - MutationObserver
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class') {
-                    console.log('🔍 Class mutation detected on success message:', successMessage.className);
+                    console.log('Class mutation detected on success message:', successMessage.className);
                     // Immediately remove 'hidden' class if someone tries to add it
                     if (successMessage.classList.contains('hidden')) {
-                        console.warn('⚠️ Someone tried to add hidden class! Removing it...');
+                        console.warn('Someone tried to add hidden class! Removing it...');
                         successMessage.classList.remove('hidden');
                     }
                 }
                 if (mutation.attributeName === 'style') {
-                    console.log('🔍 Style mutation detected on success message');
+                    console.log('Style mutation detected on success message');
                     // Ensure display stays visible
                     if (successMessage.style.display === 'none') {
-                        console.warn('⚠️ Someone tried to set display:none! Fixing it...');
+                        console.warn('Someone tried to set display:none! Fixing it...');
                         successMessage.style.display = 'block';
                     }
                 }
@@ -435,12 +439,12 @@ document.getElementById('reportForm').addEventListener('submit', async function(
             attributeFilter: ['class', 'style'],
             attributeOldValue: true
         });
-        console.log('✅ MutationObserver set up to protect success message');
+        console.log('MutationObserver set up to protect success message');
 
         // Scroll to success message after a tiny delay to ensure rendering
         setTimeout(() => {
             successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            console.log('✅ Scrolled to success message');
+            console.log('Scrolled to success message');
         }, 100);
 
         // Store tracking number in console for user reference
@@ -452,7 +456,7 @@ document.getElementById('reportForm').addEventListener('submit', async function(
         trackingNumberElement.onclick = function() {
             navigator.clipboard.writeText(result.tracking_number);
             alert('Tracking number copied to clipboard!');
-            console.log('✅ Tracking number copied to clipboard');
+            console.log('Tracking number copied to clipboard');
         };
 
         // Add close button to success message if not present
@@ -464,7 +468,7 @@ document.getElementById('reportForm').addEventListener('submit', async function(
             closeBtn.style.lineHeight = '1';
             closeBtn.onclick = function(e) {
                 e.preventDefault();
-                console.log('❌ Close button clicked - hiding message');
+                console.log('Close button clicked - hiding message');
                 successMessage.classList.add('hidden-by-user');
                 successMessage.style.display = 'none';
                 // Reset form after closing success message
@@ -474,7 +478,7 @@ document.getElementById('reportForm').addEventListener('submit', async function(
 
                 // Reset location button
                 const locationBtn = document.getElementById('detectLocationBtn');
-                locationBtn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Auto-detect My Location';
+                locationBtn.innerHTML = 'Auto-detect My Location';
                 locationBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
                 locationBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
 
@@ -504,7 +508,8 @@ async function trackReport() {
     }
 
     try {
-        const response = await fetch(`http://localhost:5000/api/track/${trackingNum}`);
+        // --- UPDATED API CALL TO USE LIVE RENDER BASE URL ---
+        const response = await fetch(`${RENDER_API_BASE}/api/track/${trackingNum}`);
 
         if (!response.ok) {
             alert('Report not found. Please check your tracking number.');
@@ -517,7 +522,7 @@ async function trackReport() {
         document.getElementById('statusDisplay').innerHTML = `
             <div class="border-b border-gray-100 pb-6 mb-6">
                 <h3 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                    <i class="fas fa-search text-green-600 mr-3"></i>Report Details
+                    Report Details
                 </h3>
                 <p class="text-gray-600">Tracking ID: <span class="font-mono font-semibold text-green-600">${trackingNum}</span></p>
             </div>
@@ -571,7 +576,14 @@ function getStatusIcon(status) {
         'scheduled': '📅',
         'completed': '✅'
     };
-    return icons[status] || '⏳';
+    // Removed emojis per request, but keeping structure for future use
+    const noEmojiIcons = {
+        'submitted': 'Submitted',
+        'under_review': 'Reviewing',
+        'scheduled': 'Scheduled',
+        'completed': 'Complete'
+    };
+    return noEmojiIcons[status] || 'Processing';
 }
 
 function getStatusDescription(status) {
