@@ -67,7 +67,15 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///road_reports.db'
+#  Use environment variable for secure deployment
+DATABASE_URL = os.environ.get('SQLALCHEMY_DATABASE_URI')
+
+if not DATABASE_URL:
+    # Fallback to local SQLite for development if variables are not set
+    print("  Using local SQLite fallback (road_reports.db)")
+    DATABASE_URL = 'sqlite:///road_reports.db'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
@@ -194,7 +202,7 @@ def submit_report():
                 print(f"💾 Image saved temporarily as: {filename}")
                 
                 if image_path and pipeline:
-                    print(f"🤖 Running AI analysis on image: {image_path}")
+                    print(f" Running AI analysis on image: {image_path}")
                     
                     # Run your pipeline analysis (includes road validation as first step)
                     analysis_result = pipeline.analyze_image(image_path)
