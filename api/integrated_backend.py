@@ -30,7 +30,7 @@ except ImportError as e:
 
 # Import your pipeline
 try:
-    from damagepipeline import initialize_pipeline
+    from api.damagepipeline import initialize_pipeline
     print("Pipeline module imported successfully")
 except ImportError as e:
     print(f"Pipeline module not found: {e}")
