@@ -281,6 +281,7 @@ document.getElementById('detectLocationBtn').addEventListener('click', function(
 
 // Photo preview functionality
 document.getElementById('photoInput').addEventListener('change', function(e) {
+    console.log("File change event triggered.", e.target.files);
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
