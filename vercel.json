@@ -7,12 +7,6 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
-  ],
   "rewrites": [
     { "source": "/", "destination": "/frontend/citizen_portal.html" },
     { "source": "/admin", "destination": "/frontend/admin.html" }
