@@ -20,3 +20,6 @@ opencv-python
 pandas
 albumentations
 psycopg2-binary
+requests
+huggingface-hub
+gunicorn

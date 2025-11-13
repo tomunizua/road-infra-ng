@@ -6,7 +6,9 @@ from PIL import Image
 import numpy as np
 import time
 import logging
+import os
 from ultralytics import YOLO
+from huggingface_hub import hf_hub_download
 
 # Configure logging for debugging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(name)s - %(message)s')
@@ -162,8 +164,7 @@ class DamageSeverityCalculator:
             logger.info("Calculating weighted overall severity:")
             for damage_type, metrics in type_severities.items():
                 # Weight by base severity and detection count
-                weight = (self.damage_weights[damage_type]['base_severity'] * 
-                         (1 + 0.1 * metrics['count']))
+                weight = (self.damage_weights[damage_type]['base_severity'] * (1 + 0.1 * metrics['count']))
                 
                 contribution = metrics['severity'] * weight
                 weighted_sum += contribution
@@ -223,7 +224,8 @@ class RoadDamagePipeline:
         
         # Initialize components
         self.road_classifier = self.load_road_classifier(road_classifier_path)
-        self.yolo_model = YOLO(yolo_model_path)
+        # YOLO model is loaded from the path provided after download
+        self.yolo_model = YOLO(yolo_model_path) 
         self.severity_calculator = DamageSeverityCalculator()
         
         print(f"Pipeline initialized on {self.device}")
@@ -231,84 +233,13 @@ class RoadDamagePipeline:
         print(f"YOLO model loaded: {'Success' if self.yolo_model else 'Failed'}")
     
     def load_road_classifier(self, model_path):
-        """Load your road classifier from HuggingFace"""
-        # HuggingFace model is disabled for now
+        """Load your road classifier from HuggingFace (Currently disabled/skipped)"""
         print(f"Road classifier (HuggingFace) is disabled - skipping load")
         return None
-        
-        try:
-            print(f"Loading road classifier from: {model_path}")
-            
-            # Download the model file from HuggingFace
-            from huggingface_hub import hf_hub_download
-            model_file = hf_hub_download(
-                repo_id=model_path, 
-                filename="pytorch_model.pth"
-            )
-            
-            checkpoint = torch.load(model_file, map_location=self.device)
-            
-            # Recreate your road classifier architecture
-            class RoadClassifier(nn.Module):
-                def __init__(self, num_classes=2):
-                    super(RoadClassifier, self).__init__()
-                    self.backbone = models.resnet18(pretrained=False)
-                    self.backbone.fc = nn.Linear(self.backbone.fc.in_features, num_classes)
-                    self.dropout = nn.Dropout(0.5)
-                
-                def forward(self, x):
-                    x = self.backbone.conv1(x)
-                    x = self.backbone.bn1(x)
-                    x = self.backbone.relu(x)
-                    x = self.backbone.maxpool(x)
-                    
-                    x = self.backbone.layer1(x)
-                    x = self.backbone.layer2(x)
-                    x = self.backbone.layer3(x)
-                    x = self.backbone.layer4(x)
-                    
-                    x = self.backbone.avgpool(x)
-                    x = torch.flatten(x, 1)
-                    x = self.dropout(x)
-                    x = self.backbone.fc(x)
-                    
-                    return x
-            
-            # Load model
-            model = RoadClassifier().to(self.device)
-            
-            # Handle different checkpoint formats
-            if 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
-            else:
-                model.load_state_dict(checkpoint)
-            
-            model.eval()
-            
-            # Define transforms (same as training)
-            self.road_transform = transforms.Compose([
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
-            
-            print("Road classifier loaded successfully")
-            return model
-            
-        except Exception as e:
-            print(f"Error loading road classifier: {e}")
-            return None
     
     def is_road_image(self, image_path_or_pil, threshold=0.5):
         """
-        Check if image contains a road surface
-        
-        Args:
-            image_path_or_pil: Path to image file or PIL Image object
-            threshold: Confidence threshold for road classification
-            
-        Returns:
-            dict: Classification result with confidence
+        Check if image contains a road surface (Skipped if classifier is None)
         """
         if self.road_classifier is None:
             return {
@@ -316,9 +247,10 @@ class RoadDamagePipeline:
                 'confidence': 1.0,
                 'message': 'Road classifier not available - proceeding with damage detection'
             }
+        # ... (rest of classification logic is skipped as per your original code's print statement)
         
         try:
-            # Load and preprocess image
+             # Load and preprocess image
             if isinstance(image_path_or_pil, str):
                 image = Image.open(image_path_or_pil).convert('RGB')
             else:
@@ -353,19 +285,11 @@ class RoadDamagePipeline:
     def detect_damage(self, image_path):
         """
         Detect damage using YOLO model
-        
-        Args:
-            image_path: Path to image file
-            
-        Returns:
-            dict: Detection results
         """
         try:
             logger.info(f"Starting YOLO damage detection on: {image_path}")
             
-            # Run YOLO detection with confidence threshold increased from 0.15 to 0.5
-            # Higher threshold = fewer false positives, more reliable detections
-            CONFIDENCE_THRESHOLD = 0.5  # Increased from 0.15 for better accuracy
+            CONFIDENCE_THRESHOLD = 0.5
             logger.debug(f"Using confidence threshold: {CONFIDENCE_THRESHOLD}")
             
             results = self.yolo_model.predict(image_path, conf=CONFIDENCE_THRESHOLD, verbose=False)
@@ -437,12 +361,6 @@ class RoadDamagePipeline:
     def analyze_image(self, image_path):
         """
         Complete pipeline analysis
-        
-        Args:
-            image_path: Path to image file
-            
-        Returns:
-            dict: Complete analysis results
         """
         analysis_start_time = time.time()
         logger.info("="*80)
@@ -456,7 +374,7 @@ class RoadDamagePipeline:
         }
         
         try:
-            # Stage 1: Road Classification
+            # Stage 1: Road Classification (Skipped or defaulted to True)
             logger.info("STAGE 1: Road Classification")
             road_result = self.is_road_image(image_path)
             result['pipeline_stages']['road_classification'] = road_result
@@ -560,22 +478,40 @@ class RoadDamagePipeline:
         return recommendations
 
 def initialize_pipeline(road_classifier_path=None, yolo_model_path=None):
-    """Initialize the complete road damage analysis pipeline"""
+    """
+    Initialize the complete road damage analysis pipeline.
     
+    This function handles the model download from Hugging Face Hub.
+    """
+    # Configuration for Hugging Face download
+    HF_REPO_ID = "tomunizua/yolov8-41.7"
+    HF_FILENAME = "best.pt"
+    LOCAL_YOLO_PATH = os.path.join("/tmp", HF_FILENAME) # /tmp is the writable directory on Render
+
     try:
-        # Default paths - update these for your models
+        # Step 1: Download the YOLO model if it's not already cached
+        if not os.path.exists(LOCAL_YOLO_PATH):
+            print(f"Downloading {HF_FILENAME} from Hugging Face Hub ({HF_REPO_ID})...")
+            
+            downloaded_file_path = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=HF_FILENAME,
+                local_dir="/tmp", # Download directly to the temporary directory
+                local_dir_use_symlinks=False
+            )
+            yolo_model_path = downloaded_file_path
+            print(f"Model successfully downloaded and saved to: {yolo_model_path}")
+        else:
+            yolo_model_path = LOCAL_YOLO_PATH
+            print("Model found in /tmp cache. Skipping download.")
+            
+        # Step 2: Initialize the Pipeline with the downloaded path
         if road_classifier_path is None:
-            road_classifier_path = "tomunizua/road-classification_filter"
-        
-        if yolo_model_path is None:
-            # Use absolute path for YOLO model
-            import os
-            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            yolo_model_path = os.path.join(base_path, "models", "best.pt")
+            # Assuming the road classifier is the generic placeholder if not specified
+            road_classifier_path = "tomunizua/road-classification_filter" 
         
         print("Initializing Road Damage Analysis Pipeline...")
-        print(f"Road Classifier: {road_classifier_path}")
-        print(f"YOLO Model: {yolo_model_path}")
+        print(f"YOLO Model Path: {yolo_model_path}")
         
         pipeline = RoadDamagePipeline(road_classifier_path, yolo_model_path)
         

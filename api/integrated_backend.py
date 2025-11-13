@@ -10,44 +10,52 @@ import base64
 from PIL import Image
 import io
 import traceback
+import sys
+
+# --- Dynamic Configuration: Render/Vercel URL ---
+# RENDER_EXTERNAL_URL is typically provided by Render, otherwise use a default
+BASE_URL = os.environ.get('RENDER_EXTERNAL_URL') or os.environ.get('VERCEL_URL') 
+if not BASE_URL:
+    # Use a generic placeholder if not running on Render/Vercel
+    BASE_URL = 'http://localhost:5000' 
 
 # Import the database models
 try:
     from database import db, Report, ReportSchema
-    print("✅ Database models imported successfully")
+    print("Database models imported successfully")
 except ImportError as e:
-    print(f"❌ Failed to import database models: {e}")
-    print("   Make sure database.py is in the same directory")
-    exit(1)
+    print(f"Failed to import database models: {e}")
+    print("Make sure database.py is in the same directory")
+    sys.exit(1)
 
 # Import your pipeline
 try:
     from damagepipeline import initialize_pipeline
-    print("✅ Pipeline module imported successfully")
+    print("Pipeline module imported successfully")
 except ImportError as e:
-    print(f"⚠️  Pipeline module not found: {e}")
-    print("   System will work without AI analysis")
+    print(f"Pipeline module not found: {e}")
+    print("System will work without AI analysis")
     initialize_pipeline = None
 
 # Import budget optimization API
 try:
-    import sys
     budget_dir = os.path.join(os.path.dirname(__file__), '..', 'budget_optimization')
     if budget_dir not in sys.path:
         sys.path.insert(0, budget_dir)
     from budget_api import create_budget_app
-    print("✅ Budget optimization API imported successfully")
+    print("Budget optimization API imported successfully")
 except ImportError as e:
-    print(f"⚠️  Budget optimization not found: {e}")
-    print("   System will work without budget optimization")
+    print(f"Budget optimization not found: {e}")
+    print("System will work without budget optimization")
     create_budget_app = None
 
 app = Flask(__name__)
 
 # Configure CORS properly
+# Note: On Render, you can set origins to BASE_URL of your Vercel frontend
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:5000", "http://127.0.0.1:5000", "file://"],
+        "origins": ["http://localhost:5500", "http://127.0.0.1:5500", BASE_URL],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -56,10 +64,11 @@ CORS(app, resources={
 # Register budget optimization API
 if create_budget_app:
     create_budget_app(app)
-    print("✅ Budget optimization endpoints registered")
+    print("Budget optimization endpoints registered")
 
 # Configuration
-UPLOAD_FOLDER = 'uploads'
+# On Render/Lambda, /tmp is the only writable location
+UPLOAD_FOLDER = '/tmp/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
 
@@ -67,12 +76,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Database configuration
-#  Use environment variable for secure deployment
 DATABASE_URL = os.environ.get('SQLALCHEMY_DATABASE_URI')
 
 if not DATABASE_URL:
-    # Fallback to local SQLite for development if variables are not set
-    print("  Using local SQLite fallback (road_reports.db)")
+    print("Using local SQLite fallback (road_reports.db)")
     DATABASE_URL = 'sqlite:///road_reports.db'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -82,6 +89,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # Create upload directory if it doesn't exist
+# This is crucial as /tmp/uploads won't exist at the start of the process
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize pipeline
@@ -91,27 +99,23 @@ if initialize_pipeline:
         # Update these paths for your actual models
         ROAD_CLASSIFIER_PATH = "tomunizua/road-classification_filter"
         
-        # Use absolute path for YOLO model
-        BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-        YOLO_MODEL_PATH = os.path.join(os.path.dirname(BASE_PATH), "models", "best.pt")
+        # NOTE: YOLO_MODEL_PATH is now handled within damagepipeline.py
+        # by downloading from Hugging Face to /tmp
         
-        # Verify the model file exists
-        if not os.path.exists(YOLO_MODEL_PATH):
-            print(f"⚠️  YOLO model not found at: {YOLO_MODEL_PATH}")
-            print("   Please check the path or copy the model to the correct location")
-            YOLO_MODEL_PATH = None
+        # Pass a placeholder path, as damagepipeline will handle the download to /tmp/best.pt
+        TEMP_MODEL_PATH = os.path.join("/tmp", "best.pt")
+        pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, TEMP_MODEL_PATH)
         
-        if YOLO_MODEL_PATH:
-            pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, YOLO_MODEL_PATH)
-            print("✅ Pipeline loaded successfully")
+        if pipeline:
+            print("Pipeline loaded successfully")
         else:
-            print("⚠️  Pipeline not loaded - YOLO model path issue")
+            print("Pipeline not loaded - check damagepipeline.py logs")
     except Exception as e:
-        print(f"❌ Failed to load pipeline: {e}")
-        print("   System will work without AI analysis")
+        print(f"Failed to load pipeline: {e}")
+        print("System will work without AI analysis")
         pipeline = None
 else:
-    print("⚠️  Pipeline module not available")
+    print("Pipeline module not available")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -121,6 +125,8 @@ def allowed_file(filename):
 def serve_upload(filename):
     """Serve uploaded images"""
     try:
+        # NOTE: This endpoint will only serve files stored temporarily in /tmp/uploads
+        # For permanent storage, you should use Supabase Storage/AWS S3 and update the URL accordingly.
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     except Exception as e:
         print(f"Error serving file {filename}: {e}")
@@ -133,21 +139,15 @@ def generate_tracking_number():
 def save_base64_image(base64_string, filename):
     """Save base64 encoded image to file"""
     try:
-        # Remove data URL prefix if present
         if ',' in base64_string:
             base64_string = base64_string.split(',')[1]
         
-        # Decode base64
         image_data = base64.b64decode(base64_string)
-        
-        # Open and save image
         image = Image.open(io.BytesIO(image_data))
         
-        # Convert to RGB if necessary
         if image.mode in ('RGBA', 'P'):
             image = image.convert('RGB')
         
-        # Save image
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         image.save(filepath, 'JPEG', quality=85)
         
@@ -158,64 +158,54 @@ def save_base64_image(base64_string, filename):
 
 @app.route('/api/submit-report', methods=['POST', 'OPTIONS'])
 def submit_report():
-    # Handle preflight requests
     if request.method == 'OPTIONS':
         return jsonify({'status': 'ok'}), 200
     
     try:
-        print("📝 Report submission started...")
+        print("Report submission started...")
         data = request.get_json()
         
         if not data:
-            print("❌ No JSON data received")
+            print("No JSON data received")
             return jsonify({'error': 'No data received'}), 400
         
-        print(f"📊 Received data keys: {list(data.keys())}")
+        print(f"Received data keys: {list(data.keys())}")
         
-        # Validate required fields
         required_fields = ['location', 'description', 'lga']
         for field in required_fields:
             if not data.get(field):
-                print(f"❌ Missing required field: {field}")
+                print(f"Missing required field: {field}")
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        # Generate tracking number
         tracking_number = generate_tracking_number()
-        print(f"🎫 Generated tracking number: {tracking_number}")
+        print(f"Generated tracking number: {tracking_number}")
         
-        # Handle image data
         image_filename = None
-        ai_analysis = None
         damage_detected = False
         damage_type = 'none'
         confidence = 0.0
         severity_score = 0
         estimated_cost = 0
         
+        # --- AI/Image Processing Block ---
         if data.get('photo'):
             try:
-                print("📷 Processing image...")
-                # Save uploaded image TEMPORARILY for analysis
+                print("Processing image...")
                 filename = f"{tracking_number}_{secure_filename('report_image.jpg')}"
                 image_path = save_base64_image(data['photo'], filename)
                 image_filename = filename
-                print(f"💾 Image saved temporarily as: {filename}")
+                print(f"Image saved temporarily as: {filename}")
                 
                 if image_path and pipeline:
-                    print(f" Running AI analysis on image: {image_path}")
-                    
-                    # Run your pipeline analysis (includes road validation as first step)
+                    print(f"Running AI analysis on image: {image_path}")
                     analysis_result = pipeline.analyze_image(image_path)
                     
-                    # 🔴 NEW: Check if image is NOT a road image FIRST
                     if analysis_result['status'] == 'rejected':
-                        print(f"❌ Image validation failed: {analysis_result.get('message', 'Not a road image')}")
-                        # Delete the temporary image file
+                        print(f"Image validation failed: {analysis_result.get('message', 'Not a road image')}")
                         if os.path.exists(image_path):
                             os.remove(image_path)
-                            print(f"🗑️  Deleted temporary file: {filename}")
+                            print(f"Deleted temporary file: {filename}")
                         
-                        # Return error to user WITHOUT saving to database
                         return jsonify({
                             'success': False,
                             'error': 'No road damage image detected',
@@ -223,47 +213,37 @@ def submit_report():
                             'details': analysis_result.get('message', '')
                         }), 400
                     
-                    # Continue processing if road validation passed
                     if analysis_result['status'] == 'completed':
                         summary = analysis_result['summary']
                         damage_detected = summary.get('total_damages', 0) > 0
                         damage_type = summary.get('dominant_damage', 'none') or 'mixed'
-                        severity_score = int(summary.get('severity_score', 0) * 100)  # Convert to 0-100 scale
-                        confidence = 0.95  # High confidence if pipeline completed
-                        
-                        # Simple cost estimation based on severity and damage type
+                        severity_score = int(summary.get('severity_score', 0) * 100)
+                        confidence = 0.95
                         estimated_cost = estimate_repair_cost(damage_type, severity_score, summary.get('total_damages', 0))
                         
-                        # Store AI analysis for admin dashboard
-                        ai_analysis = json.dumps(analysis_result)
-                        
-                        print(f"✅ AI Analysis complete: {damage_type} damage, severity: {severity_score}")
+                        print(f"AI Analysis complete: {damage_type} damage, severity: {severity_score}")
                     elif analysis_result['status'] == 'no_damage':
-                        # Road image but no damage detected - this is valid, save to database
-                        print(f"✅ Road image validated, but no damage detected")
+                        print(f"Road image validated, but no damage detected")
                         damage_detected = False
                         damage_type = 'none'
                         confidence = 0.95
                         severity_score = 0
                         estimated_cost = 0
-                        ai_analysis = json.dumps(analysis_result)
                     else:
-                        print(f"⚠️  AI Analysis inconclusive: {analysis_result.get('message', 'Unknown error')}")
+                        print(f"AI Analysis inconclusive: {analysis_result.get('message', 'Unknown error')}")
                         damage_detected = False
                         damage_type = 'unknown'
                         confidence = 0.5
-                        ai_analysis = json.dumps(analysis_result)
                 else:
-                    print("⚠️  No AI pipeline available for image analysis")
+                    print("No AI pipeline available for image analysis")
                         
             except Exception as e:
-                print(f"❌ Error processing image: {e}")
+                print(f"Error processing image: {e}")
                 traceback.print_exc()
+        # --- End AI/Image Processing Block ---
         
-        # Create new report using SQLAlchemy model
-        print("💾 Creating database record...")
+        print("Creating database record...")
         
-        # Extract GPS coordinates and LGA
         gps_latitude = None
         gps_longitude = None
         gps_detected = False
@@ -273,7 +253,7 @@ def submit_report():
             gps_latitude = gps_data.get('latitude')
             gps_longitude = gps_data.get('longitude')
             gps_detected = True
-            print(f"📍 GPS detected: Lat={gps_latitude}, Lon={gps_longitude}")
+            print(f"GPS detected: Lat={gps_latitude}, Lon={gps_longitude}")
         
         new_report = Report(
             tracking_number=tracking_number,
@@ -294,13 +274,11 @@ def submit_report():
             status='under_review'
         )
         
-        # Save to database
         db.session.add(new_report)
         db.session.commit()
         
-        print(f"✅ Report created successfully: {tracking_number}")
+        print(f"Report created successfully: {tracking_number}")
         
-        # Prepare response (NO AI analysis shown to public)
         response = {
             'success': True,
             'tracking_number': tracking_number,
@@ -311,7 +289,7 @@ def submit_report():
         return jsonify(response)
         
     except Exception as e:
-        print(f"❌ Error submitting report: {e}")
+        print(f"Error submitting report: {e}")
         traceback.print_exc()
         db.session.rollback()
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -319,41 +297,33 @@ def submit_report():
 def estimate_repair_cost(damage_type, severity_score, damage_count):
     """Estimate repair cost based on damage type and severity"""
     base_costs = {
-        'pothole': 500,  # NGN per pothole
-        'longitudinal_crack': 200,  # NGN per meter
-        'lateral_crack': 300,  # NGN per meter
+        'pothole': 500,
+        'longitudinal_crack': 200,
+        'lateral_crack': 300,
         'mixed': 400,
         'none': 0,
         'unknown': 250
     }
     
     base_cost = base_costs.get(damage_type, 250)
-    
-    # Scale by severity (0-100)
-    severity_multiplier = 1 + (severity_score / 100) * 2  # 1x to 3x multiplier
-    
-    # Scale by damage count
-    count_multiplier = max(1, damage_count * 0.8)  # Slight efficiency for multiple damages
-    
+    severity_multiplier = 1 + (severity_score / 100) * 2
+    count_multiplier = max(1, damage_count * 0.8)
     total_cost = int(base_cost * severity_multiplier * count_multiplier)
     
-    # Round to nearest 50 NGN
     return ((total_cost + 25) // 50) * 50
 
 @app.route('/api/track/<tracking_number>', methods=['GET'])
 def track_report(tracking_number):
     try:
-        print(f"🔍 Tracking request for: {tracking_number}")
-        # Query using SQLAlchemy
+        print(f"Tracking request for: {tracking_number}")
         report = Report.query.filter_by(tracking_number=tracking_number).first()
         
         if not report:
-            print(f"❌ Report not found: {tracking_number}")
+            print(f"Report not found: {tracking_number}")
             return jsonify({'error': 'Report not found'}), 404
         
-        print(f"✅ Report found: {tracking_number}")
+        print(f"Report found: {tracking_number}")
         
-        # Return basic info only (NO AI analysis for public)
         report_data = {
             'tracking_number': report.tracking_number,
             'location': report.location,
@@ -368,28 +338,24 @@ def track_report(tracking_number):
         return jsonify(report_data)
         
     except Exception as e:
-        print(f"❌ Error tracking report: {e}")
+        print(f"Error tracking report: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/reports', methods=['GET'])
 def get_admin_reports():
     """Get all reports with AI analysis for admin dashboard"""
     try:
-        print("📊 Admin reports request received")
-        # Query all reports using SQLAlchemy
+        print("Admin reports request received")
         reports = Report.query.order_by(Report.created_at.desc()).all()
-        print(f"📋 Found {len(reports)} reports")
+        print(f"Found {len(reports)} reports")
         
-        # Convert to dictionaries with admin-specific formatting
         reports_data = []
         for report in reports:
-            # Construct photo URL - support both old and new image filename formats
             photo_url = None
             if report.image_filename:
-                # Ensure filename is clean and sanitized
+                # IMPORTANT: Use dynamic BASE_URL instead of localhost:5000
                 filename = secure_filename(report.image_filename)
-                photo_url = f"http://localhost:5000/api/uploads/{filename}"
-                print(f"📸 Report {report.tracking_number} has image: {filename} -> {photo_url}")
+                photo_url = f"{BASE_URL}/api/uploads/{filename}"
             
             report_dict = {
                 'id': report.id,
@@ -397,37 +363,28 @@ def get_admin_reports():
                 'location': report.location,
                 'description': report.description,
                 'phone': report.phone,
-                'contact': report.phone,
                 'image_filename': report.image_filename,
                 'photo_url': photo_url,
                 'state': report.state,
                 'lga': report.lga,
-                'gps': f"{report.gps_latitude}, {report.gps_longitude}" if report.gps_latitude and report.gps_longitude else None,
-                'gps_detected': report.gps_detected,
-                'gps_latitude': report.gps_latitude,
-                'gps_longitude': report.gps_longitude,
                 'damage_detected': report.damage_detected,
                 'damage_type': report.damage_type,
-                'damage_types': [report.damage_type] if report.damage_type and report.damage_type != 'none' else [],
                 'confidence': report.confidence,
-                'ai_confidence': report.confidence,
-                'severity_score': report.severity_score / 100.0,  # Convert back to 0-1 scale for consistency
+                'severity_score': report.severity_score / 100.0,
                 'severity_level': get_severity_level(report.severity_score),
                 'estimated_cost': report.estimated_cost,
-                'assigned_contractor': report.assigned_contractor,
-                'rejection_reason': report.rejection_reason,
                 'status': report.status,
                 'created_at': report.created_at.isoformat() if report.created_at else None,
                 'updated_at': report.updated_at.isoformat() if report.updated_at else None,
-                'ai_analysis': None  # Will be populated if needed
+                'ai_analysis': None
             }
             reports_data.append(report_dict)
         
-        print(f"✅ Returning {len(reports_data)} reports to admin dashboard")
+        print(f"Returning {len(reports_data)} reports to admin dashboard")
         return jsonify({'reports': reports_data})
         
     except Exception as e:
-        print(f"❌ Error getting admin reports: {e}")
+        print(f"Error getting admin reports: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -446,8 +403,7 @@ def get_severity_level(severity_score):
 def get_admin_report_detail(report_id):
     """Get detailed report with full AI analysis for admin"""
     try:
-        print(f"📝 Admin report detail request for: {report_id}")
-        # Query by ID or tracking number
+        print(f"Admin report detail request for: {report_id}")
         query_filters = [Report.tracking_number == report_id]
         if report_id.isdigit():
             query_filters.append(Report.id == int(report_id))
@@ -455,26 +411,25 @@ def get_admin_report_detail(report_id):
         report = Report.query.filter(or_(*query_filters)).first()
         
         if not report:
-            print(f"❌ Report not found: {report_id}")
+            print(f"Report not found: {report_id}")
             return jsonify({'error': 'Report not found'}), 404
         
-        print(f"✅ Report detail found: {report.tracking_number}")
+        print(f"Report detail found: {report.tracking_number}")
         
-        # Return full report data with admin formatting
         report_data = {
             'id': report.id,
             'tracking_number': report.tracking_number,
             'location': report.location,
             'description': report.description,
-            'contact_info': report.phone,  # Admin dashboard expects contact_info
+            'contact_info': report.phone,
             'phone': report.phone,
             'image_filename': report.image_filename,
-            'image_path': f"/uploads/{report.image_filename}" if report.image_filename else None,
+            # Use dynamic BASE_URL for image path reference
+            'image_path': f"{BASE_URL}/api/uploads/{report.image_filename}" if report.image_filename else None,
             'damage_detected': report.damage_detected,
             'damage_type': report.damage_type,
-            'damage_types': [report.damage_type] if report.damage_type and report.damage_type != 'none' else [],
             'confidence': report.confidence,
-            'severity_score': report.severity_score / 100.0,  # Convert back to 0-1 scale
+            'severity_score': report.severity_score / 100.0,
             'severity_level': get_severity_level(report.severity_score),
             'estimated_cost': report.estimated_cost,
             'assigned_contractor': report.assigned_contractor,
@@ -482,17 +437,26 @@ def get_admin_report_detail(report_id):
             'status': report.status,
             'created_at': report.created_at.isoformat() if report.created_at else None,
             'updated_at': report.updated_at.isoformat() if report.updated_at else None,
-            'ai_analysis': create_mock_ai_analysis(report)  # Create mock AI analysis structure
+            'ai_analysis': create_mock_ai_analysis(report)
         }
         
         return jsonify(report_data)
         
     except Exception as e:
-        print(f"❌ Error getting report detail: {e}")
+        print(f"Error getting report detail: {e}")
         return jsonify({'error': str(e)}), 500
 
 def create_mock_ai_analysis(report):
-    """Create mock AI analysis structure for admin dashboard compatibility"""
+    # ... (function body remains unchanged)
+    urgency_map = {
+        'high': 'immediate',
+        'medium': 'scheduled', 
+        'low': 'routine',
+        'none': 'monitoring'
+    }
+    
+    severity_level = get_severity_level(report.severity_score)
+    
     if not report.damage_detected:
         return {
             'status': 'no_damage',
@@ -506,16 +470,6 @@ def create_mock_ai_analysis(report):
             },
             'recommendations': ['No immediate action required', 'Continue regular monitoring']
         }
-    
-    # Create realistic analysis structure
-    urgency_map = {
-        'high': 'immediate',
-        'medium': 'scheduled', 
-        'low': 'routine',
-        'none': 'monitoring'
-    }
-    
-    severity_level = get_severity_level(report.severity_score)
     
     return {
         'status': 'completed',
@@ -532,7 +486,7 @@ def create_mock_ai_analysis(report):
     }
 
 def generate_recommendations(severity_level, damage_type):
-    """Generate recommendations based on severity and damage type"""
+    # ... (function body remains unchanged)
     recommendations = []
     
     if severity_level == 'high':
@@ -553,7 +507,6 @@ def generate_recommendations(severity_level, damage_type):
     else:
         recommendations.append("Continue regular monitoring")
     
-    # Damage-specific recommendations
     if damage_type == 'pothole':
         recommendations.append("Pothole repair needed - safety priority")
     elif damage_type == 'lateral_crack':
@@ -565,30 +518,25 @@ def generate_recommendations(severity_level, damage_type):
 
 @app.route('/api/admin/analytics', methods=['GET'])
 def get_admin_analytics():
-    """Get analytics data for admin dashboard"""
+    # ... (function body remains unchanged)
     try:
-        print("📈 Admin analytics request received")
-        # Get basic stats using SQLAlchemy
+        print("Admin analytics request received")
         total_reports = Report.query.count()
         completed_reports = Report.query.filter_by(status='completed').count()
         high_severity_reports = Report.query.filter(Report.severity_score >= 70).count()
         
-        # Status distribution
         status_query = db.session.query(Report.status, db.func.count(Report.id)).group_by(Report.status).all()
         status_distribution = dict(status_query)
         
-        # Damage type distribution
         damage_query = db.session.query(Report.damage_type, db.func.count(Report.id)).group_by(Report.damage_type).all()
         damage_type_distribution = dict(damage_query)
         
-        # Severity distribution
         severity_distribution = {
             'low': Report.query.filter(Report.severity_score < 30).count(),
             'medium': Report.query.filter((Report.severity_score >= 30) & (Report.severity_score < 70)).count(),
             'high': Report.query.filter(Report.severity_score >= 70).count()
         }
         
-        # Calculate metrics
         completion_rate = (completed_reports / total_reports * 100) if total_reports > 0 else 0
         
         analytics_data = {
@@ -601,17 +549,17 @@ def get_admin_analytics():
             'damage_type_distribution': damage_type_distribution
         }
         
-        print(f"✅ Analytics data prepared: {total_reports} total reports")
+        print(f"Analytics data prepared: {total_reports} total reports")
         return jsonify(analytics_data)
         
     except Exception as e:
-        print(f"❌ Error getting analytics: {e}")
+        print(f"Error getting analytics: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/update-status', methods=['POST'])
 def update_report_status():
-    """Update report status"""
+    # ... (function body remains unchanged)
     try:
         data = request.get_json()
         report_id = data.get('report_id')
@@ -619,47 +567,45 @@ def update_report_status():
         assigned_contractor = data.get('assigned_contractor')
         rejection_reason = data.get('rejection_reason')
         
-        print(f"🔄 Status update request for {report_id} to {new_status}")
+        print(f"Status update request for {report_id} to {new_status}")
         
         if not report_id or not new_status:
             return jsonify({'error': 'Missing report_id or status'}), 400
         
-        # Find report
         report = Report.query.filter(
             (Report.id == int(report_id) if report_id.isdigit() else 0) | 
             (Report.tracking_number == report_id)
         ).first()
         
         if not report:
-            print(f"❌ Report not found: {report_id}")
+            print(f"Report not found: {report_id}")
             return jsonify({'error': 'Report not found'}), 404
         
-        # Update fields
         report.status = new_status
         if assigned_contractor:
             report.assigned_contractor = assigned_contractor
         if rejection_reason:
             report.rejection_reason = rejection_reason
         
-        # Save changes
         db.session.commit()
         
-        print(f"✅ Status updated: {report.tracking_number} -> {new_status}")
+        print(f"Status updated: {report.tracking_number} -> {new_status}")
         return jsonify({'success': True, 'message': 'Status updated successfully'})
         
     except Exception as e:
-        print(f"❌ Error updating status: {e}")
+        print(f"Error updating status: {e}")
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     """Serve uploaded files"""
+    # NOTE: This endpoint only works if UPLOAD_FOLDER is set to /tmp/uploads
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
+    # ... (function body remains unchanged)
     try:
         total_reports = Report.query.count()
         health_data = {
@@ -669,10 +615,10 @@ def health_check():
             'total_reports': total_reports,
             'timestamp': datetime.now().isoformat()
         }
-        print(f"💚 Health check: {total_reports} reports in database")
+        print(f"Health check: {total_reports} reports in database")
         return jsonify(health_data)
     except Exception as e:
-        print(f"❌ Health check failed: {e}")
+        print(f"Health check failed: {e}")
         return jsonify({
             'status': 'unhealthy',
             'error': str(e),
@@ -686,6 +632,7 @@ def test_endpoint():
     return jsonify({
         'message': 'Server is running!',
         'timestamp': datetime.now().isoformat(),
+        'base_url': BASE_URL,
         'endpoints': [
             '/api/submit-report',
             '/api/track/<tracking_number>',
@@ -695,45 +642,30 @@ def test_endpoint():
         ]
     })
 
-# Serve static files
-@app.route('/')
-def index():
-    return send_from_directory('.', 'redo.html')
-
-@app.route('/<filename>')
-def serve_static(filename):
-    if filename.endswith('.html'):
-        return send_from_directory('.', filename)
-    return "File not found", 404
+# --- STATIC FILE ROUTES REMOVED ---
+# These endpoints are served by the Vercel frontend and should be removed from the API
 
 if __name__ == '__main__':
     with app.app_context():
         try:
-            # Create all database tables
             db.create_all()
-            print("✅ Database tables created successfully")
+            print("Database tables created successfully")
 
-            # Check if we have any data
             report_count = Report.query.count()
-            print(f"📊 Current reports in database: {report_count}")
+            print(f"Current reports in database: {report_count}")
 
         except Exception as e:
-            print(f"❌ Database initialization failed: {e}")
-            exit(1)
+            print(f"Database initialization failed: {e}")
+            sys.exit(1)
 
-    # Get port from environment variable (for deployment platforms) or use 5000 for local
     port = int(os.environ.get('PORT', 5000))
 
     print("\n" + "="*60)
-    print("🚀 Starting RoadWatch Nigeria Backend...")
-    print(f"🤖 Pipeline status: {'✅ Loaded' if pipeline else '⚠️ Not loaded'}")
-    print(f"🗄️  Database: SQLAlchemy with SQLite")
-    print(f"🌐 Server starting on http://0.0.0.0:{port}")
-    print(f"📋 Test endpoint: http://localhost:{port}/api/test")
-    print(f"💚 Health check: http://localhost:{port}/api/health")
-    print(f"👥 Citizen Portal: http://localhost:{port}/citizen_portal.html")
-    print(f"📊 Admin Dashboard: http://localhost:{port}/admin.html")
+    print("Starting RoadWatch Nigeria Backend (Render Deployment)...")
+    print(f"Pipeline status: {'Loaded' if pipeline else 'Not loaded'}")
+    print(f"Database: PostgreSQL via URL")
+    print(f"Live Base URL: {BASE_URL}")
+    print(f"Server starting on http://0.0.0.0:{port}")
     print("="*60)
 
-    # Run the app (debug=False for production, no auto-reloader causing page refreshes)
     app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
