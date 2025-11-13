@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
 from sqlalchemy import or_
 import os
 import json
 import uuid
 from datetime import datetime
 from werkzeug.utils import secure_filename
-import base64
+from werkzeug.security import generate_password_hash, check_password_hash # Required for secure passwords
 from PIL import Image
 import io
 import traceback
@@ -21,7 +22,7 @@ if not BASE_URL:
 
 # Import the database models
 try:
-    from api.database import db, Report, ReportSchema
+    from api.database import db, Report, ReportSchema, AdminUser # Ensure AdminUser is imported here
     print("Database models imported successfully")
 except ImportError as e:
     print(f"Failed to import database models: {e}")
@@ -51,11 +52,27 @@ except ImportError as e:
 
 app = Flask(__name__)
 
+# --- JWT CONFIGURATION AND INITIALIZATION ---
+# 1. JWT Secret Key is retrieved from Render/OS Environment Variable
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY", 
+    "A-Very-Secure-Fallback-Key-For-Local-Use-Only" 
+) 
+app.config["JWT_TOKEN_LOCATION"] = ["headers"] # Tokens expected in Authorization: Bearer <token> header
+jwt = JWTManager(app)
+# --- END JWT CONFIG ---
+
 # Configure CORS properly
-# Note: On Render, you can set origins to BASE_URL of your Vercel frontend
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5500", "http://127.0.0.1:5500", BASE_URL],
+        "origins": [
+            "http://localhost:5500", 
+            "http://127.0.0.1:5500", 
+            "https://roadwatchnigeria.vercel.app",
+            "https://www.roadwatchnigeria.site", 
+            "https://roadwatchnigeria.site",  
+            BASE_URL 
+        ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -67,7 +84,6 @@ if create_budget_app:
     print("Budget optimization endpoints registered")
 
 # Configuration
-# On Render/Lambda, /tmp is the only writable location
 UPLOAD_FOLDER = '/tmp/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
@@ -88,21 +104,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database
 db.init_app(app)
 
-# Create upload directory if it doesn't exist
-# This is crucial as /tmp/uploads won't exist at the start of the process
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize pipeline
 pipeline = None
 if initialize_pipeline:
     try:
-        # Update these paths for your actual models
         ROAD_CLASSIFIER_PATH = "tomunizua/road-classification_filter"
-        
-        # NOTE: YOLO_MODEL_PATH is now handled within damagepipeline.py
-        # by downloading from Hugging Face to /tmp
-        
-        # Pass a placeholder path, as damagepipeline will handle the download to /tmp/best.pt
         TEMP_MODEL_PATH = os.path.join("/tmp", "best.pt")
         pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, TEMP_MODEL_PATH)
         
@@ -125,8 +133,6 @@ def allowed_file(filename):
 def serve_upload(filename):
     """Serve uploaded images"""
     try:
-        # NOTE: This endpoint will only serve files stored temporarily in /tmp/uploads
-        # For permanent storage, you should use Supabase Storage/AWS S3 and update the URL accordingly.
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     except Exception as e:
         print(f"Error serving file {filename}: {e}")
@@ -155,6 +161,34 @@ def save_base64_image(base64_string, filename):
     except Exception as e:
         print(f"Error saving base64 image: {e}")
         return None
+
+# --- ADMIN LOGIN ENDPOINT (SECURE) ---
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    data = request.get_json()
+    username = data.get('username', None)
+    password = data.get('password', None)
+
+    if not username or not password:
+        return jsonify({"error": "Missing username or password"}), 400
+
+    try:
+        # Query database for user and check password hash
+        user = AdminUser.query.filter_by(username=username).first()
+
+        if user is None or not user.check_password(password):
+            return jsonify({"error": "Invalid username or password"}), 401
+        
+        # Create and return JWT token
+        access_token = create_access_token(identity=user.username, expires_delta=datetime.timedelta(hours=24))
+        return jsonify(token=access_token)
+            
+    except Exception as e:
+        print(f"Database error during login: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Server authentication error"}), 500
+# --- END ADMIN LOGIN ENDPOINT ---
+
 
 @app.route('/api/submit-report', methods=['POST', 'OPTIONS'])
 def submit_report():
@@ -341,10 +375,13 @@ def track_report(tracking_number):
         print(f"Error tracking report: {e}")
         return jsonify({'error': str(e)}), 500
 
+# --- PROTECTED ADMIN ROUTES ---
 @app.route('/api/admin/reports', methods=['GET'])
+@jwt_required()
 def get_admin_reports():
     """Get all reports with AI analysis for admin dashboard"""
     try:
+        # Current user identity: get_jwt_identity() 
         print("Admin reports request received")
         reports = Report.query.order_by(Report.created_at.desc()).all()
         print(f"Found {len(reports)} reports")
@@ -353,7 +390,6 @@ def get_admin_reports():
         for report in reports:
             photo_url = None
             if report.image_filename:
-                # IMPORTANT: Use dynamic BASE_URL instead of localhost:5000
                 filename = secure_filename(report.image_filename)
                 photo_url = f"{BASE_URL}/api/uploads/{filename}"
             
@@ -400,6 +436,7 @@ def get_severity_level(severity_score):
         return 'none'
 
 @app.route('/api/admin/report/<report_id>', methods=['GET'])
+@jwt_required()
 def get_admin_report_detail(report_id):
     """Get detailed report with full AI analysis for admin"""
     try:
@@ -424,7 +461,6 @@ def get_admin_report_detail(report_id):
             'contact_info': report.phone,
             'phone': report.phone,
             'image_filename': report.image_filename,
-            # Use dynamic BASE_URL for image path reference
             'image_path': f"{BASE_URL}/api/uploads/{report.image_filename}" if report.image_filename else None,
             'damage_detected': report.damage_detected,
             'damage_type': report.damage_type,
@@ -447,7 +483,6 @@ def get_admin_report_detail(report_id):
         return jsonify({'error': str(e)}), 500
 
 def create_mock_ai_analysis(report):
-    # ... (function body remains unchanged)
     urgency_map = {
         'high': 'immediate',
         'medium': 'scheduled', 
@@ -486,7 +521,6 @@ def create_mock_ai_analysis(report):
     }
 
 def generate_recommendations(severity_level, damage_type):
-    # ... (function body remains unchanged)
     recommendations = []
     
     if severity_level == 'high':
@@ -517,8 +551,9 @@ def generate_recommendations(severity_level, damage_type):
     return recommendations
 
 @app.route('/api/admin/analytics', methods=['GET'])
+@jwt_required()
 def get_admin_analytics():
-    # ... (function body remains unchanged)
+    """Get analytics data for admin dashboard"""
     try:
         print("Admin analytics request received")
         total_reports = Report.query.count()
@@ -558,8 +593,9 @@ def get_admin_analytics():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/update-status', methods=['POST'])
+@jwt_required()
 def update_report_status():
-    # ... (function body remains unchanged)
+    """Update report status"""
     try:
         data = request.get_json()
         report_id = data.get('report_id')
@@ -600,12 +636,10 @@ def update_report_status():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     """Serve uploaded files"""
-    # NOTE: This endpoint only works if UPLOAD_FOLDER is set to /tmp/uploads
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    # ... (function body remains unchanged)
     try:
         total_reports = Report.query.count()
         health_data = {
@@ -642,14 +676,15 @@ def test_endpoint():
         ]
     })
 
-# --- STATIC FILE ROUTES REMOVED ---
-# These endpoints are served by the Vercel frontend and should be removed from the API
-
 if __name__ == '__main__':
     with app.app_context():
         try:
             db.create_all()
             print("Database tables created successfully")
+            
+            # --- INITIAL ADMIN USER CREATION ---
+            # NOTE: Use the local script create_initial_admin.py instead of this block for production setup.
+            # This block is useful for simple local dev. For production, the AdminUser table must exist.
 
             report_count = Report.query.count()
             print(f"Current reports in database: {report_count}")

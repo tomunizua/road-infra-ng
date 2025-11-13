@@ -1,10 +1,22 @@
+// --- Global Configuration ---
+const API_BASE_URL = 'https://roadwatch-ng.onrender.com'; 
+const AUTH_TOKEN_KEY = 'adminAuthToken'; // Shared with admin_auth.js
+
+// Function to get the current auth header
+function getAuthHeader() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+        return { 'Authorization': `Bearer ${token}` };
+    }
+    return {};
+}
+
 // Global variables
 let allReports = [];
 let currentFilter = 'all';
 
 // Toast notification system
 function showToast(title, message, type = 'success') {
-    // Create toast container if it doesn't exist
     let container = document.getElementById('toastContainer');
     if (!container) {
         container = document.createElement('div');
@@ -13,7 +25,6 @@ function showToast(title, message, type = 'success') {
         document.body.appendChild(container);
     }
 
-    // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
@@ -35,7 +46,6 @@ function showToast(title, message, type = 'success') {
 
     container.appendChild(toast);
 
-    // Auto-remove after 4 seconds
     setTimeout(() => {
         if (toast.parentElement) {
             toast.remove();
@@ -45,6 +55,13 @@ function showToast(title, message, type = 'success') {
 
 // Navigation handling
 document.addEventListener('DOMContentLoaded', function() {
+    // If not authenticated, the script stops here (handled by admin_auth.js)
+    if (document.getElementById('adminDashboardContent').classList.contains('hidden')) {
+        return;
+    }
+    
+    // --- Dashboard Initialization (Only runs if token exists) ---
+
     // Mobile menu toggle
     document.getElementById('mobileMenuToggle').addEventListener('click', function() {
         document.getElementById('sidebar').style.transform = 'translateX(0)';
@@ -63,31 +80,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Notification bell click handler
     document.getElementById('notificationBtn').addEventListener('click', function() {
-        showToast('📢 Notifications', '3 new notifications: New report submitted, Report approved for repair, Budget update available', 'info');
+        showToast('Notifications', '3 new notifications: New report submitted, Report approved for repair, Budget update available', 'info');
     });
 
     // Profile button click handler
     document.getElementById('profileBtn').addEventListener('click', function() {
-        showToast('👤 Admin Profile', 'Username: admin@roadwatch.ng | Role: Administrator | Status: Active', 'info');
+        showToast('Admin Profile', 'Username: admin@roadwatch.ng | Role: Administrator | Status: Active', 'info');
     });
+
+    // Logout handler
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
     // Navigation items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-
-            // Update active state
             document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.classList.remove('active');
-                nav.classList.add('text-gray-600');
-                nav.classList.remove('bg-green-100', 'text-green-700');
+                nav.classList.remove('active', 'bg-white', 'bg-opacity-20', 'text-white');
+                nav.classList.add('text-green-100', 'hover:bg-white', 'hover:bg-opacity-10');
             });
-
-            this.classList.add('active');
-            this.classList.remove('text-gray-600');
-            this.classList.add('bg-green-100', 'text-green-700');
-
-            // Show/hide sections
+            this.classList.add('active', 'bg-white', 'bg-opacity-20', 'text-white');
+            this.classList.remove('text-green-100', 'hover:bg-white', 'hover:bg-opacity-10');
             const section = this.dataset.section;
             showSection(section);
         });
@@ -96,15 +109,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            // Update active filter
             document.querySelectorAll('.filter-btn').forEach(b => {
                 b.classList.remove('filter-active');
-                b.classList.add('text-gray-600', 'bg-gray-100');
+                b.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white', 'shadow-md', 'hover:shadow-lg');
+                b.classList.add('text-gray-600', 'bg-gray-100', 'hover:bg-gray-200');
             });
-
             this.classList.add('filter-active');
-            this.classList.remove('text-gray-600', 'bg-gray-100');
-
+            this.classList.add('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white', 'shadow-md', 'hover:shadow-lg');
+            this.classList.remove('text-gray-600', 'bg-gray-100', 'hover:bg-gray-200');
             const filter = this.dataset.filter;
             filterReports(filter);
         });
@@ -115,22 +127,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mapStatusFilter').addEventListener('change', refreshMapMarkers);
     document.getElementById('mapDamageFilter').addEventListener('change', refreshMapMarkers);
 
-    // Load initial data
+    // Load initial data (only if authenticated)
     loadDashboardData();
     loadReports();
     initCharts();
 });
 
 function showSection(sectionName) {
-    // Hide all sections
     document.querySelectorAll('.section-content').forEach(section => {
         section.classList.add('hidden');
     });
 
-    // Show selected section
     document.getElementById(sectionName + 'Section').classList.remove('hidden');
 
-    // Update page title
     const titles = {
         dashboard: 'Dashboard',
         reports: 'All Reports',
@@ -141,14 +150,12 @@ function showSection(sectionName) {
     };
     document.getElementById('pageTitle').textContent = titles[sectionName] || 'Dashboard';
 
-    // Initialize map if map section is shown
     if (sectionName === 'map') {
         setTimeout(() => {
             initializeMap();
         }, 100);
     }
 
-    // Load budget data if budget section is shown
     if (sectionName === 'budget') {
         setTimeout(() => {
             loadBudgetOptimization();
@@ -159,17 +166,21 @@ function showSection(sectionName) {
 // Load dashboard statistics
 async function loadDashboardData() {
     try {
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
-        if (!response.ok) throw new Error('Failed to fetch reports');
+        if (!response.ok) {
+            if (response.status === 401) {
+                // If API rejects token, force logout (assuming handleLogout is globally available)
+                window.handleLogout(); 
+                return;
+            }
+            throw new Error('Failed to fetch reports');
+        }
 
         const data = await response.json();
         const reports = data.reports || data;
 
-        // Calculate statistics
         const stats = {
             total: reports.length,
             submitted: reports.filter(r => r.status === 'submitted').length,
@@ -179,18 +190,15 @@ async function loadDashboardData() {
             completed: reports.filter(r => r.status === 'completed').length
         };
 
-        // Update dashboard cards
         document.getElementById('totalReports').textContent = stats.total;
         document.getElementById('scheduledReports').textContent = stats.scheduled;
         document.getElementById('inProgressReports').textContent = stats.in_progress;
         document.getElementById('completedReports').textContent = stats.completed;
 
-        // Load recent reports
         loadRecentReports(reports.slice(0, 5));
 
     } catch (error) {
         console.error('Error loading dashboard data:', error);
-        // Show fallback data
         document.getElementById('totalReports').textContent = '0';
         document.getElementById('scheduledReports').textContent = '0';
         document.getElementById('inProgressReports').textContent = '0';
@@ -201,10 +209,8 @@ async function loadDashboardData() {
 // Load all reports
 async function loadReports() {
     try {
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
         if (!response.ok) throw new Error('Failed to fetch reports');
 
@@ -326,26 +332,26 @@ function getStatusColor(status) {
 
 function getSeverityColor(score) {
     if (!score) return 'bg-gray-500';
-    if (score >= 8) return 'bg-red-500';
-    if (score >= 6) return 'bg-yellow-500';
-    if (score >= 4) return 'bg-orange-500';
-    return 'bg-green-500';
+    // Normalized score assuming score is out of 10
+    const normalizedScore = score / 10; 
+    if (normalizedScore >= 0.8) return 'bg-red-500'; // High (8-10)
+    if (normalizedScore >= 0.6) return 'bg-yellow-500'; // Medium-High (6-7.9)
+    if (normalizedScore >= 0.4) return 'bg-orange-500'; // Medium-Low (4-5.9)
+    return 'bg-green-500'; // Low (0-3.9)
 }
 
 // View report details
 async function viewReport(trackingNumber) {
     try {
-        // Find report in the loaded data
         const report = allReports.find(r => r.tracking_number === trackingNumber);
 
         if (!report) {
             console.error('Report not found in loaded data');
-            showToast('✗ Error', 'Report not found', 'error');
+            showToast('Error', 'Report not found', 'error');
             return;
         }
 
-        // Debug: Log the report data to help troubleshoot image issues
-        console.log('📋 Report data:', {
+        console.log('Report data:', {
             tracking_number: report.tracking_number,
             image_filename: report.image_filename,
             photo_url: report.photo_url,
@@ -356,7 +362,7 @@ async function viewReport(trackingNumber) {
 
     } catch (error) {
         console.error('Error loading report:', error);
-        showToast('✗ Error', 'Failed to load report details', 'error');
+        showToast('Error', 'Failed to load report details', 'error');
     }
 }
 
@@ -365,7 +371,7 @@ async function editReport(trackingNumber) {
     try {
         const report = allReports.find(r => r.tracking_number === trackingNumber);
         if (!report) {
-            showToast('✗ Error', 'Report not found', 'error');
+            showToast('Error', 'Report not found', 'error');
             return;
         }
 
@@ -373,7 +379,7 @@ async function editReport(trackingNumber) {
 
     } catch (error) {
         console.error('Error in edit mode:', error);
-        showToast('✗ Error', 'Failed to open edit mode', 'error');
+        showToast('Error', 'Failed to open edit mode', 'error');
     }
 }
 
@@ -448,10 +454,10 @@ function showReportModal(report) {
             ${report.photo_url || report.image_filename ? `
             <div>
                 <h4 class="font-medium text-gray-900 mb-2">Reported Image</h4>
-                <img src="${report.photo_url || `http://localhost:5000/api/uploads/${report.image_filename}`}"
-                     alt="Road damage"
-                     class="w-full h-48 object-cover rounded-lg hover:shadow-lg transition"
-                     onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22system-ui%22 font-size=%2216%22 fill=%22%239ca3af%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
+                <img src="${report.photo_url || `${API_BASE_URL}/api/uploads/${report.image_filename}`}"
+                    alt="Road damage"
+                    class="w-full h-48 object-cover rounded-lg hover:shadow-lg transition"
+                    onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22system-ui%22 font-size=%2216%22 fill=%22%239ca3af%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
             </div>
             ` : `
             <div>
@@ -484,12 +490,13 @@ function showReportModal(report) {
 
 async function updateReportStatus(reportId, newStatus) {
     try {
-        console.log(`🔄 Updating report ${reportId} to status: ${newStatus}`);
+        console.log(`Updating report ${reportId} to status: ${newStatus}`);
 
-        const response = await fetch(`http://localhost:5000/api/admin/update-status`, {
+        const response = await fetch(`${API_BASE_URL}/api/admin/update-status`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 report_id: String(reportId),
@@ -504,15 +511,12 @@ async function updateReportStatus(reportId, newStatus) {
             throw new Error(data.error || `Server error: ${response.status}`);
         }
 
-        console.log('✅ Status updated successfully');
+        console.log('Status updated successfully');
 
-        // Format status text
         const statusText = newStatus.replace('_', ' ').toUpperCase();
 
-        // Show success toast
-        showToast('✓ Status Updated', `Report status changed to ${statusText}`, 'success');
+        showToast('Status Updated', `Report status changed to ${statusText}`, 'success');
 
-        // Refresh data - Don't change tabs, just refresh current data
         closeModal();
         const currentSection = document.querySelector('.section-content:not(.hidden)');
         if (currentSection && currentSection.id === 'reportsSection') {
@@ -523,8 +527,8 @@ async function updateReportStatus(reportId, newStatus) {
         loadDashboardData();
 
     } catch (error) {
-        console.error('❌ Error updating status:', error);
-        showToast('✗ Update Failed', error.message, 'error');
+        console.error('Error updating status:', error);
+        showToast('Update Failed', error.message, 'error');
     }
 }
 
@@ -613,12 +617,13 @@ async function saveReportEdits(reportId) {
     try {
         const newStatus = document.getElementById('statusSelect').value;
 
-        // First, update the status using the existing endpoint
-        const statusResponse = await fetch('http://localhost:5000/api/admin/update-status', {
+        // Note: You should update this endpoint to support PATCH/PUT requests
+        // for full editing, but for now, we only confirm the status update
+        const statusResponse = await fetch(`${API_BASE_URL}/api/admin/update-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + btoa('admin:secret')
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 report_id: String(reportId),
@@ -631,28 +636,22 @@ async function saveReportEdits(reportId) {
             throw new Error(error.error || 'Failed to update report status');
         }
 
-        // Note: For additional fields like severity, damage_type, cost, description,
-        // you would need to implement backend endpoints if they don't exist yet.
-        // For now, we'll just update the status and show a success message.
-
-        showToast('✓ Report Updated', 'Status has been successfully updated', 'success');
+        showToast('Report Updated', 'Status has been successfully updated', 'success');
         closeModal();
         loadReports();
         loadDashboardData();
 
     } catch (error) {
         console.error('Error saving changes:', error);
-        showToast('✗ Save Failed', error.message, 'error');
+        showToast('Save Failed', error.message, 'error');
     }
 }
 
 // Budget optimization functions
 async function loadBudgetOptimization() {
     try {
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
 
         if (!response.ok) throw new Error('Failed to fetch reports');
@@ -660,7 +659,6 @@ async function loadBudgetOptimization() {
         const data = await response.json();
         const reports = data.reports || data;
 
-        // Calculate budget metrics
         let totalCost = 0;
         const damageTypeCosts = {};
 
@@ -675,18 +673,14 @@ async function loadBudgetOptimization() {
             damageTypeCosts[damageType] += cost;
         });
 
-        const totalBudget = 5000000; // Default budget
+        const totalBudget = 5000000;
         const remaining = totalBudget - totalCost;
 
-        // Update UI
         document.getElementById('estimatedRepairCost').textContent = '₦' + totalCost.toLocaleString();
         document.getElementById('budgetRemaining').textContent = '₦' + Math.max(0, remaining).toLocaleString();
         document.getElementById('estimatedReports').textContent = reports.length;
 
-        // Load budget chart
         loadBudgetChart(damageTypeCosts);
-
-        // Load priority queue
         loadPriorityQueue(reports);
 
     } catch (error) {
@@ -724,7 +718,6 @@ function loadBudgetChart(damageTypeCosts) {
 }
 
 function loadPriorityQueue(reports, budget = 5000000) {
-    // Sort by severity (highest first) then by cost
     const sorted = [...reports].sort((a, b) => {
         const severityDiff = (b.severity_score || 0) - (a.severity_score || 0);
         if (severityDiff !== 0) return severityDiff;
@@ -757,7 +750,7 @@ function loadPriorityQueue(reports, budget = 5000000) {
                 <input type="checkbox" class="report-checkbox rounded cursor-pointer" data-cost="${cost}" onchange="updateBulkSelectUI()">
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" style="background-color: ${canAfford ? '#e5e7eb' : '#fee2e2'}; color: ${canAfford ? '#374151' : '#991b1b'};">
+                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" style="background-color: ${canAfford ? '#e5e7eb' : '#fee2f2'}; color: ${canAfford ? '#374151' : '#991b1b'};">
                     #${index + 1}
                 </span>
             </td>
@@ -778,25 +771,20 @@ function loadPriorityQueue(reports, budget = 5000000) {
         if (canAfford) spent += cost;
     });
 
-    // Update affordable count card
     document.getElementById('affordableCount').textContent = affordableCount;
 }
 
 async function optimizeBudget() {
     try {
-        // Get budget from input
         let budgetInput = parseFloat(document.getElementById('budgetInput')?.value) || 5000000;
 
         if (isNaN(budgetInput) || budgetInput <= 0) {
-            showToast('✗ Invalid Budget', 'Please enter a valid budget amount', 'error');
+            showToast('Invalid Budget', 'Please enter a valid budget amount', 'error');
             return;
         }
 
-        // Get reports with new budget
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
 
         if (!response.ok) throw new Error('Failed to fetch reports');
@@ -804,7 +792,6 @@ async function optimizeBudget() {
         const data = await response.json();
         const reports = data.reports || data;
 
-        // Calculate budget metrics with the new budget
         let totalCost = 0;
         const damageTypeCosts = {};
 
@@ -821,7 +808,6 @@ async function optimizeBudget() {
 
         const remaining = budgetInput - totalCost;
 
-        // Update UI with new budget
         if (document.getElementById('estimatedRepairCost')) {
             document.getElementById('estimatedRepairCost').textContent = '₦' + totalCost.toLocaleString();
         }
@@ -832,7 +818,6 @@ async function optimizeBudget() {
             document.getElementById('currentBudgetCard').textContent = '₦' + budgetInput.toLocaleString();
         }
 
-        // Load priority queue with the new budget
         loadPriorityQueue(reports, budgetInput);
 
         const reportsAffordable = reports.filter(r => {
@@ -840,14 +825,13 @@ async function optimizeBudget() {
             return cost <= budgetInput;
         }).length;
 
-        showToast('✓ Budget Optimized', `Can repair ${reportsAffordable} reports with ₦${budgetInput.toLocaleString()} budget`, 'success');
+        showToast('Budget Optimized', `Can repair ${reportsAffordable} reports with ₦${budgetInput.toLocaleString()} budget`, 'success');
 
     } catch (error) {
         console.error('Error optimizing budget:', error);
-        showToast('✗ Optimization Failed', error.message, 'error');
+        showToast('Optimization Failed', error.message, 'error');
     }
 }
-
 
 
 // Bulk select checkboxes
@@ -875,7 +859,7 @@ function updateBulkSelectUI() {
 async function scheduleSelected() {
     const checkboxes = document.querySelectorAll('.report-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('ℹ No Selection', 'Please select at least one report', 'info');
+        showToast('No Selection', 'Please select at least one report', 'info');
         return;
     }
 
@@ -885,13 +869,12 @@ async function scheduleSelected() {
         const reportIdCell = row.querySelector('td:nth-child(3)');
         const trackingNumber = reportIdCell.textContent.trim();
 
-        // Find the report ID from allReports
         const report = allReports.find(r => r.tracking_number === trackingNumber);
         if (report) reportIds.push(report.id);
     });
 
     if (reportIds.length === 0) {
-        showToast('✗ Error', 'Could not find report IDs', 'error');
+        showToast('Error', 'Could not find report IDs', 'error');
         return;
     }
 
@@ -899,14 +882,13 @@ async function scheduleSelected() {
         let successCount = 0;
         let errorCount = 0;
 
-        // Schedule each report
         for (const reportId of reportIds) {
             try {
-                const response = await fetch('http://localhost:5000/api/admin/update-status', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/update-status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa('admin:secret')
+                        ...getAuthHeader()
                     },
                     body: JSON.stringify({
                         report_id: String(reportId),
@@ -924,26 +906,23 @@ async function scheduleSelected() {
             }
         }
 
-        // Show results
         if (successCount > 0) {
-            showToast('✓ Scheduled', `${successCount} report(s) scheduled successfully`, 'success');
+            showToast('Scheduled', `${successCount} report(s) scheduled successfully`, 'success');
 
-            // Uncheck all
             document.querySelectorAll('.report-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('selectAllCheckbox').checked = false;
             updateBulkSelectUI();
 
-            // Refresh
             loadBudgetOptimization();
         }
 
         if (errorCount > 0) {
-            showToast('⚠ Partial Error', `${errorCount} report(s) failed to schedule`, 'warning');
+            showToast('Partial Error', `${errorCount} report(s) failed to schedule`, 'warning');
         }
 
     } catch (error) {
         console.error('Error scheduling reports:', error);
-        showToast('✗ Error', 'Failed to schedule reports', 'error');
+        showToast('Error', 'Failed to schedule reports', 'error');
     }
 }
 
@@ -951,10 +930,8 @@ async function scheduleSelected() {
 async function initCharts() {
     // Load reports and calculate over-time data
     try {
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
 
         if (!response.ok) throw new Error('Failed to fetch reports');
@@ -966,7 +943,6 @@ async function initCharts() {
         const dateMap = {};
         const today = new Date();
 
-        // Initialize last 30 days
         for (let i = 29; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
@@ -974,7 +950,6 @@ async function initCharts() {
             dateMap[dateStr] = 0;
         }
 
-        // Count reports by date
         reports.forEach(report => {
             const reportDate = new Date(report.created_at);
             const dateStr = reportDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1076,8 +1051,7 @@ let allMapMarkers = [];
 
 function initializeMap() {
     try {
-        // Initialize map centered on Nigeria (approximate center: Lagos)
-        const initialCoords = [6.5244, 3.3792]; // Lagos coordinates
+        const initialCoords = [6.5244, 3.3792];
 
         if (mapInstance) {
             mapInstance.remove();
@@ -1085,19 +1059,16 @@ function initializeMap() {
 
         mapInstance = L.map('reportMap').setView(initialCoords, 10);
 
-        // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(mapInstance);
 
-        // Initialize marker cluster group
         markerClusterGroup = L.markerClusterGroup({
             chunkedLoading: true
         });
         mapInstance.addLayer(markerClusterGroup);
 
-        // Load markers
         refreshMapMarkers();
 
     } catch (error) {
@@ -1144,16 +1115,12 @@ async function refreshMapMarkers() {
         markerClusterGroup.clearLayers();
         allMapMarkers = [];
 
-        // Get filter values
         const severityFilter = document.getElementById('mapSeverityFilter').value;
         const statusFilter = document.getElementById('mapStatusFilter').value;
         const damageFilter = document.getElementById('mapDamageFilter').value;
 
-        // Fetch reports
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
-            headers: {
-                'Authorization': 'Basic ' + btoa('admin:secret')
-            }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
         });
 
         if (!response.ok) throw new Error('Failed to fetch reports');
@@ -1161,22 +1128,18 @@ async function refreshMapMarkers() {
         const data = await response.json();
         const reports = data.reports || data;
 
-        // Filter reports
         const filteredReports = reports.filter(report => {
             let pass = true;
 
-            // Severity filter
             if (severityFilter !== 'all') {
                 const reportSeverity = getSeverityLabel(report.severity_score * 100);
                 if (reportSeverity.toLowerCase() !== severityFilter) pass = false;
             }
 
-            // Status filter
             if (statusFilter !== 'all') {
                 if (report.status !== statusFilter) pass = false;
             }
 
-            // Damage type filter
             if (damageFilter !== 'all') {
                 if (report.damage_type !== damageFilter) pass = false;
             }
@@ -1184,9 +1147,7 @@ async function refreshMapMarkers() {
             return pass;
         });
 
-        // Add markers
         filteredReports.forEach(report => {
-            // Parse location to get coordinates (format: "lat,lon" or just use approximate)
             let lat, lon;
 
             if (report.location && report.location.includes(',')) {
@@ -1194,7 +1155,6 @@ async function refreshMapMarkers() {
                 lat = parseFloat(coords[0].trim());
                 lon = parseFloat(coords[1].trim());
             } else {
-                // Use approximate coordinates around Lagos with random offset
                 lat = 6.5 + (Math.random() - 0.5) * 0.5;
                 lon = 3.3 + (Math.random() - 0.5) * 0.5;
             }
@@ -1205,7 +1165,6 @@ async function refreshMapMarkers() {
 
                 const marker = L.marker([lat, lon], { icon: icon });
 
-                // Create popup content
                 const popupContent = `
                     <div class="marker-popup" style="min-width: 250px;">
                         <h4>${report.tracking_number}</h4>

@@ -3,6 +3,7 @@ Flask-Cors
 Flask-HTTPAuth
 Flask-SQLAlchemy
 Flask-Marshmallow
+Flask-JWT-Extended
 marshmallow-sqlalchemy
 tensorflow
 Pillow
@@ -23,3 +24,4 @@ psycopg2-binary
 requests
 huggingface-hub
 gunicorn
+werkzeug
