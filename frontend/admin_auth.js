@@ -1,9 +1,23 @@
-// --- Global Configuration ---
+function handleDemoLogin() {
+    try {
+        const demoToken = 'demo_token_' + Date.now();
+        localStorage.setItem(AUTH_TOKEN_KEY, demoToken);
+        localStorage.setItem('isDemoMode', 'true');
+        console.log('Demo login triggered, token:', demoToken);
+        window.location.reload();
+    } catch (error) {
+        console.error('Error in demo login:', error);
+        alert('Failed to start demo mode. Please check browser console.');
+    }
+}
 
-const API_BASE_URL = 'https://roadwatch-ng.onrender.com'; 
-const AUTH_TOKEN_KEY = 'adminAuthToken'; 
+window.handleDemoLogin = handleDemoLogin;
 
-document.addEventListener('DOMContentLoaded', initializeAuth);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAuth);
+} else {
+    initializeAuth();
+}
 
 function initializeAuth() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -11,25 +25,29 @@ function initializeAuth() {
     const dashboardContent = document.getElementById('adminDashboardContent');
 
     if (token) {
-        // Token exists: Try to validate it (e.g., check if expired)
-        // For now, we assume a token in storage is valid until proven otherwise by a failed API request
         dashboardContent.classList.remove('hidden');
         loginFormContainer.classList.add('hidden');
-        // Initialize dashboard components (admin.js functions)
-        loadDashboardData(); 
-        loadReports();
-        initCharts();
-        // Set initial sidebar state (otherwise it starts translated)
         document.getElementById('sidebar').style.transform = 'translateX(0)';
+        
+        setTimeout(function() {
+            loadDashboardData(); 
+            loadReports();
+            initCharts();
+            if (typeof initDashboard === 'function') {
+                initDashboard();
+            }
+        }, 100);
 
     } else {
-        // No token: Show login form
         loginFormContainer.classList.remove('hidden');
         dashboardContent.classList.add('hidden');
     }
 
-    // Attach event listeners for login and logout
     document.getElementById('adminLoginForm').addEventListener('submit', handleLogin);
+    const demoLoginBtn = document.getElementById('demoLoginBtn');
+    if (demoLoginBtn) {
+        demoLoginBtn.addEventListener('click', handleDemoLogin);
+    }
     const logoutButton = document.getElementById('logoutBtn');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
@@ -38,16 +56,23 @@ function initializeAuth() {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const username = document.getElementById('username').value;
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const errorDisplay = document.getElementById('loginError');
     const submitBtn = document.getElementById('loginSubmitBtn');
 
     errorDisplay.classList.add('hidden');
+
+    const validationError = validateLoginForm(username, password);
+    if (validationError) {
+        errorDisplay.textContent = validationError;
+        errorDisplay.classList.remove('hidden');
+        return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Authenticating...';
 
-    // 🚨 IMPORTANT: The /api/admin/login endpoint MUST be created in your Flask backend.
     try {
         const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
             method: 'POST',
@@ -59,7 +84,7 @@ async function handleLogin(e) {
 
         if (response.ok && result.token) {
             localStorage.setItem(AUTH_TOKEN_KEY, result.token);
-            window.location.reload(); // Reload to show the dashboard
+            window.location.reload();
         } else {
             const errorMessage = result.error || 'Invalid username or password.';
             errorDisplay.textContent = errorMessage;
@@ -72,20 +97,28 @@ async function handleLogin(e) {
         console.error('Login error:', error);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Log In';
+        submitBtn.textContent = 'Sign In';
     }
+}
+
+function validateLoginForm(username, password) {
+    if (!username) {
+        return 'Please enter your username or email address.';
+    }
+    if (username.length < 3) {
+        return 'Username or email must be at least 3 characters long.';
+    }
+    if (!password) {
+        return 'Please enter your password.';
+    }
+    if (password.length < 6) {
+        return 'Password must be at least 6 characters long.';
+    }
+    return null;
 }
 
 function handleLogout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
-    window.location.reload(); // Reload to show the login screen
-}
-
-// Utility function to get the stored token for protected API calls
-function getAuthHeader() {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (token) {
-        return { 'Authorization': `Bearer ${token}` };
-    }
-    return {};
+    localStorage.removeItem('isDemoMode');
+    window.location.reload();
 }

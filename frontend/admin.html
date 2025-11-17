@@ -26,10 +26,10 @@
         
         /* Login styles */
         .login-bg {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #000 100%);
+            background: white;
         }
         .card-shadow {
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .btn-green {
             background-color: #16a34a;
@@ -64,11 +64,47 @@
         .severity-medium { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .severity-low { background: linear-gradient(135deg, #10b981, #059669); }
         .severity-none { background: linear-gradient(135deg, #9ca3af, #6b7280); }
-        /* Map and Toast styles remain as in your original file */
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px; }
-        .toast { /* ... toast styles ... */ }
-        @keyframes fadeIn { /* ... */ }
-        /* ... other custom styles ... */
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            border-left: 4px solid #16a34a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast.success { border-left-color: #16a34a; }
+        .toast.info { border-left-color: #2563eb; }
+        .toast.warning { border-left-color: #f59e0b; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast-icon { font-size: 20px; min-width: 20px; }
+        .toast.success .toast-icon { color: #16a34a; }
+        .toast.info .toast-icon { color: #2563eb; }
+        .toast.warning .toast-icon { color: #f59e0b; }
+        .toast.error .toast-icon { color: #ef4444; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; color: #1f2937; font-size: 14px; }
+        .toast-message { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        .toast-close:hover { color: #6b7280; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         #reportMap { height: 600px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
         .marker-popup { font-family: system-ui, -apple-system, sans-serif; }
     </style>
@@ -78,58 +114,56 @@
     <div id="loginFormContainer" class="login-bg min-h-screen flex items-center justify-center">
         <div class="max-w-md w-full p-8 md:p-10 bg-white rounded-xl card-shadow border border-gray-200">
             
-            <div class="text-center mb-10">
-                <div class="flex items-center justify-center mb-3">
-                    <i class="fas fa-road text-4xl text-white bg-green-600 p-3 rounded-xl mr-3"></i>
-                    <h1 class="text-3xl font-extrabold text-gray-900">RoadWatch</h1>
+            <div class="text-center mb-12">
+                <div class="flex items-center justify-center mb-6">
+                    <img src="images/rlogo.png" alt="RoadWatch Logo" class="h-16 w-auto">
                 </div>
-                <p class="text-xl font-semibold text-gray-700">Admin Portal Login</p>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-orange-600 bg-clip-text text-transparent mb-2">RoadWatch Admin</h1>
+                <p class="text-gray-600 font-medium">Infrastructure Management Portal</p>
             </div>
 
-            <form id="adminLoginForm" class="space-y-6">
+            <form id="adminLoginForm" class="space-y-5">
                 
-                <div id="loginError" class="hidden p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm" role="alert">
+                <div id="loginError" class="hidden p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded text-sm" role="alert">
                     Invalid username or password.
                 </div>
 
                 <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username or Email</label>
-                    <div class="mt-1 relative rounded-md shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-user text-gray-400"></i>
-                        </div>
-                        <input type="text" id="username" name="username" required 
-                               placeholder="Enter your admin credentials"
-                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
-                    </div>
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Username or Email</label>
+                    <input type="text" id="username" name="username" required 
+                           placeholder="admin@roadwatch.ng"
+                           class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition sm:text-sm">
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <div class="mt-1 relative rounded-md shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-lock text-gray-400"></i>
-                        </div>
-                        <input type="password" id="password" name="password" required 
-                               placeholder="••••••••"
-                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
-                    </div>
+                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="••••••••"
+                           class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition sm:text-sm">
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
-                        <label for="remember-me" class="ml-2 block text-sm text-gray-900">Remember me</label>
-                    </div>
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-700 font-medium">Remember me</label>
                 </div>
 
                 <div>
                     <button type="submit" id="loginSubmitBtn"
-                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white btn-green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300">
-                        <i class="fas fa-sign-in-alt mr-2 mt-0.5"></i>
-                        Log In
+                            class="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200 transform hover:scale-105">
+                        Sign In
                     </button>
                 </div>
+
+                <div class="relative flex items-center">
+                    <div class="flex-grow border-t border-gray-300"></div>
+                    <span class="px-3 text-sm text-gray-500">or</span>
+                    <div class="flex-grow border-t border-gray-300"></div>
+                </div>
+
+                <button type="button" id="demoLoginBtn" onclick="handleDemoLogin()"
+                        class="w-full py-3 px-4 border-2 border-gray-300 rounded-lg text-base font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:border-green-500 transition duration-200">
+                    Demo Login
+                </button>
             </form>
         </div>
     </div>
@@ -137,54 +171,54 @@
 
     <div id="adminDashboardContent" class="hidden">
         
-        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-2xl sidebar-transition" style="transform: translateX(-100%);">
-            <div class="flex items-center justify-between p-4 border-b border-green-500 border-opacity-30">
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl sidebar-transition" style="transform: translateX(-100%);">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-road text-white"></i>
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src="images/rlogo.png" alt="RoadWatch" class="h-8 w-auto">
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-white">RoadWatch</h2>
-                        <p class="text-xs text-green-100">Admin Dashboard</p>
+                        <h2 class="text-lg font-bold text-gray-900">RoadWatch</h2>
+                        <p class="text-xs text-gray-500">Admin Dashboard</p>
                     </div>
                 </div>
-                <button id="sidebarToggle" class="lg:hidden text-green-100 hover:text-white">
+                <button id="sidebarToggle" class="lg:hidden text-gray-600 hover:text-gray-900">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
             <nav class="mt-6">
                 <div class="px-4 space-y-2">
-                    <a href="#" class="nav-item active flex items-center px-3 py-2.5 text-sm font-medium rounded-lg bg-white bg-opacity-20 text-white" data-section="dashboard">
+                    <a href="#" class="nav-item active flex items-center px-3 py-2.5 text-sm font-medium rounded-lg bg-green-700 text-white" data-section="dashboard">
                         <i class="fas fa-chart-line mr-3"></i>Dashboard
                     </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-green-100 rounded-lg hover:bg-white hover:bg-opacity-10 transition" data-section="reports">
+                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition" data-section="reports">
                         <i class="fas fa-list mr-3"></i>All Reports
                     </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-green-100 rounded-lg hover:bg-white hover:bg-opacity-10 transition" data-section="map">
+                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition" data-section="map">
                         <i class="fas fa-map mr-3"></i>Map View
                     </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-green-100 rounded-lg hover:bg-white hover:bg-opacity-10 transition" data-section="budget">
+                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition" data-section="budget">
                         <i class="fas fa-wallet mr-3"></i>Budget Optimization
                     </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-green-100 rounded-lg hover:bg-white hover:bg-opacity-10 transition" data-section="users">
+                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition" data-section="users">
                         <i class="fas fa-users mr-3"></i>Users
                     </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-green-100 rounded-lg hover:bg-white hover:bg-opacity-10 transition" data-section="settings">
+                    <a href="#" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition" data-section="settings">
                         <i class="fas fa-cog mr-3"></i>Settings
                     </a>
                 </div>
                 
                 <div class="px-4 mt-8">
-                    <div class="border-t border-green-500 border-opacity-30 pt-4">
+                    <div class="border-t border-gray-200 pt-4">
                         <div class="flex items-center space-x-3 px-3 py-2">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-green-700 text-sm font-bold bg-white">A</div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-green-600 text-sm font-bold bg-green-100">A</div>
                             <div>
-                                <p class="text-sm font-medium text-white">Admin User</p>
-                                <p class="text-xs text-green-100">Lagos State Govt</p>
+                                <p class="text-sm font-medium text-gray-900">Admin User</p>
+                                <p class="text-xs text-gray-500">Lagos State Govt</p>
                             </div>
                         </div>
-                        <button id="logoutBtn" class="flex items-center px-3 py-2.5 text-sm font-medium text-red-100 rounded-lg hover:bg-red-500 hover:bg-opacity-50 transition w-full mt-2">
+                        <button id="logoutBtn" class="flex items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition w-full mt-2">
                             <i class="fas fa-sign-out-alt mr-3"></i>Log Out
                         </button>
                     </div>
@@ -239,9 +273,7 @@
                                     <p class="text-sm font-medium text-gray-600 mb-1">Total Reports</p>
                                     <p id="totalReports" class="text-4xl font-bold text-green-700">...</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center shadow-md">
-                                    <i class="fas fa-file-alt text-white text-xl"></i>
-                                </div>
+                                <i class="fas fa-file-alt text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                         
@@ -249,11 +281,9 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Scheduled</p>
-                                    <p id="scheduledReports" class="text-4xl font-bold text-orange-600">...</p>
+                                    <p id="scheduledReports" class="text-4xl font-bold text-green-700">...</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <i class="fas fa-calendar text-white text-xl"></i>
-                                </div>
+                                <i class="fas fa-calendar text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                         
@@ -261,11 +291,9 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">In Progress</p>
-                                    <p id="inProgressReports" class="text-4xl font-bold text-blue-600">...</p>
+                                    <p id="inProgressReports" class="text-4xl font-bold text-green-700">...</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <i class="fas fa-tools text-white text-xl"></i>
-                                </div>
+                                <i class="fas fa-tools text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                         
@@ -273,11 +301,9 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Completed</p>
-                                    <p id="completedReports" class="text-4xl font-bold text-purple-600">...</p>
+                                    <p id="completedReports" class="text-4xl font-bold text-green-700">...</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <i class="fas fa-check-circle text-white text-xl"></i>
-                                </div>
+                                <i class="fas fa-check-circle text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                     </div>
@@ -299,7 +325,7 @@
                             <h3 class="text-lg font-bold text-gray-900 flex items-center"><i class="fas fa-clock text-green-600 mr-2"></i>Recent Reports</h3>
                         </div>
                         <div class="p-6">
-                            <div id="recentReportsList" class="space-y-4"></div>
+                            <div id="recentReportsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                         </div>
                     </div>
                 </div>
@@ -344,7 +370,7 @@
 
                 <div id="mapSection" class="section-content hidden">
                     <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center"><i class="fas fa-map text-purple-600 mr-2"></i>Road Damage Map View</h3>
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center"><i class="fas fa-map text-green-600 mr-2"></i>Road Damage Map View</h3>
                         
                         <div class="mb-6 p-4 bg-gradient-to-r from-gray-50 to-purple-50 rounded-lg border border-gray-100">
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -374,8 +400,9 @@
                                         <option value="all">All Types</option>
                                         <option value="pothole">Pothole</option>
                                         <option value="longitudinal_crack">Longitudinal Crack</option>
-                                        <option value="lateral_crack">Lateral Crack</option>
-                                        <option value="mixed">Mixed</option>
+                                        <option value="transverse_crack">Transverse Crack</option>
+                                        <option value="alligator_crack">Alligator Crack</option>
+                                        <option value="other_corruption">Other Corruption</option>
                                     </select>
                                 </div>
                                 <div class="flex items-end">
@@ -418,10 +445,10 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Current Budget</p>
-                                    <p id="currentBudgetCard" class="text-3xl font-bold text-orange-600">₦5,000,000</p>
+                                    <p id="currentBudgetCard" class="text-3xl font-bold text-green-700">₦5,000,000</p>
                                     <p class="text-xs text-gray-500 mt-1">Use header to change</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-wallet text-white text-xl"></i></div>
+                                <i class="fas fa-wallet text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                         
@@ -429,10 +456,10 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Total Cost (All)</p>
-                                    <p id="estimatedRepairCost" class="text-3xl font-bold text-purple-600">₦0</p>
+                                    <p id="estimatedRepairCost" class="text-3xl font-bold text-green-700">₦0</p>
                                     <p class="text-xs text-gray-500 mt-1">All reports</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-calculator text-white text-xl"></i></div>
+                                <i class="fas fa-calculator text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                         
@@ -440,10 +467,10 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Remaining</p>
-                                    <p id="budgetRemaining" class="text-3xl font-bold text-green-600">₦0</p>
+                                    <p id="budgetRemaining" class="text-3xl font-bold text-green-700">₦0</p>
                                     <p class="text-xs text-gray-500 mt-1">To spend</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-check-circle text-white text-xl"></i></div>
+                                <i class="fas fa-check-circle text-gray-400 text-3xl"></i>
                             </div>
                         </div>
 
@@ -451,10 +478,10 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 mb-1">Affordable</p>
-                                    <p id="affordableCount" class="text-3xl font-bold text-blue-600">0</p>
+                                    <p id="affordableCount" class="text-3xl font-bold text-green-700">0</p>
                                     <p class="text-xs text-gray-500 mt-1">reports</p>
                                 </div>
-                                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-thumbs-up text-white text-xl"></i></div>
+                                <i class="fas fa-thumbs-up text-gray-400 text-3xl"></i>
                             </div>
                         </div>
                     </div>
@@ -522,9 +549,43 @@
                 </div>
                 
                 <div id="usersSection" class="section-content hidden">
-                    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center"><i class="fas fa-users text-green-600 mr-2"></i>Users</h3>
-                        <p class="text-gray-600">User management would be implemented here</p>
+                    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center"><i class="fas fa-users text-green-600 mr-2"></i>User Management</h3>
+                            <button class="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg hover:shadow-lg shadow-md transition font-medium" onclick="addNewUser()">
+                                <i class="fas fa-plus mr-2"></i>Add User
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Role</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Joined</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody" class="bg-white divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">Admin User</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">admin@roadwatch.ng</td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Admin</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Jan 15, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                            <button class="text-blue-600 hover:text-blue-900 font-medium">Edit</button>
+                                            <button class="text-red-600 hover:text-red-900 font-medium">Remove</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -590,10 +651,70 @@
             </div>
         </div>
 
+        <!-- Profile Modal -->
+        <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+            <div class="min-h-screen px-4 py-8 text-center flex items-center justify-center">
+                <div class="inline-block align-middle bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:max-w-2xl sm:w-full">
+                    <div class="bg-gradient-to-r from-green-600 to-green-700 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg leading-6 font-bold text-white">Admin Profile</h3>
+                            <button onclick="closeProfileModal()" class="text-white hover:text-gray-200 transition"><i class="fas fa-times text-lg"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-6 sm:p-8 bg-white">
+                        <div class="flex items-center mb-8">
+                            <div class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold" style="background: linear-gradient(135deg, #16a34a, #15803d);">A</div>
+                            <div class="ml-6">
+                                <h4 class="text-2xl font-bold text-gray-900" id="profileName">Administrator</h4>
+                                <p class="text-gray-600 text-sm mt-1" id="profileRole">System Administrator</p>
+                                <span class="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Email</p>
+                                <p class="text-lg font-medium text-gray-900" id="profileEmail">admin@roadwatch.ng</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Username</p>
+                                <p class="text-lg font-medium text-gray-900" id="profileUsername">admin</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Department</p>
+                                <p class="text-lg font-medium text-gray-900" id="profileDept">Infrastructure Management</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Last Login</p>
+                                <p class="text-lg font-medium text-gray-900" id="profileLastLogin">Today at 10:30 AM</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+                            <p class="text-sm text-blue-900"><span class="font-semibold">Role:</span> Full administrative access to the RoadWatch dashboard</p>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-edit"></i>Edit Profile
+                            </button>
+                            <button class="flex-1 px-4 py-2.5 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-key"></i>Change Password
+                            </button>
+                            <button onclick="closeProfileModal()" class="flex-1 px-4 py-2.5 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300 transition">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <div id="toastContainer" class="toast-container"></div>
-    <script src="admin_auth.js"></script>
+    <script src="config.js"></script>
     <script src="admin.js"></script>
+    <script src="admin_auth.js"></script>
 </body>
 </html>

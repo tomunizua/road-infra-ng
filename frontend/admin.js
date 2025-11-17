@@ -1,6 +1,9 @@
 // --- Global Configuration ---
-const API_BASE_URL = 'https://roadwatch-ng.onrender.com'; 
-const AUTH_TOKEN_KEY = 'adminAuthToken'; // Shared with admin_auth.js
+let API_BASE_URL = 'https://roadwatch-ng.onrender.com';
+if (typeof API_CONFIG !== 'undefined') {
+    API_BASE_URL = API_CONFIG.getApiUrl();
+}
+const AUTH_TOKEN_KEY = 'adminAuthToken';
 
 // Function to get the current auth header
 function getAuthHeader() {
@@ -14,6 +17,17 @@ function getAuthHeader() {
 // Global variables
 let allReports = [];
 let currentFilter = 'all';
+const isDemoMode = localStorage.getItem('isDemoMode') === 'true';
+
+// Mock demo data
+const mockReports = [
+    { id: 1, tracking_number: 'RW-001', title: 'Pothole on Lagos-Ibadan Expressway', location: 'Kilometer 45, Lagos-Ibadan Expressway', damage_type: 'pothole', severity_score: 8.5, status: 'under_review', created_at: '2025-11-13T10:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+1' },
+    { id: 2, tracking_number: 'RW-002', title: 'Road Surface Crack Near Ikorodu', location: 'Ikorodu Road Junction', damage_type: 'longitudinal_crack', severity_score: 6.2, status: 'scheduled', created_at: '2025-11-12T09:15:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+1' },
+    { id: 3, tracking_number: 'RW-003', title: 'Bridge Bearing Damage', location: 'Third Mainland Bridge', damage_type: 'alligator_crack', severity_score: 7.8, status: 'in_progress', created_at: '2025-11-11T14:45:00', image_url: 'https://via.placeholder.com/400x300?text=Bridge+1' },
+    { id: 4, tracking_number: 'RW-004', title: 'Pavement Deterioration', location: 'Lekki-Epe Expressway Km 25', damage_type: 'transverse_crack', severity_score: 5.5, status: 'completed', created_at: '2025-11-10T11:20:00', image_url: 'https://via.placeholder.com/400x300?text=Pavement+1' },
+    { id: 5, tracking_number: 'RW-005', title: 'Lane Marking Faded', location: 'VGC Access Road', damage_type: 'other_corruption', severity_score: 3.2, status: 'submitted', created_at: '2025-11-09T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Marking+1' },
+    { id: 6, tracking_number: 'RW-006', title: 'Drainage System Blockage', location: 'Shomolu District Road 5', damage_type: 'pothole', severity_score: 6.8, status: 'under_review', created_at: '2025-11-08T16:30:00', image_url: 'https://via.placeholder.com/400x300?text=Drainage+1' }
+];
 
 // Toast notification system
 function showToast(title, message, type = 'success') {
@@ -54,9 +68,9 @@ function showToast(title, message, type = 'success') {
 }
 
 // Navigation handling
-document.addEventListener('DOMContentLoaded', function() {
-    // If not authenticated, the script stops here (handled by admin_auth.js)
-    if (document.getElementById('adminDashboardContent').classList.contains('hidden')) {
+function initDashboard() {
+    const dashboardContent = document.getElementById('adminDashboardContent');
+    if (!dashboardContent || dashboardContent.classList.contains('hidden')) {
         return;
     }
     
@@ -85,7 +99,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Profile button click handler
     document.getElementById('profileBtn').addEventListener('click', function() {
-        showToast('Admin Profile', 'Username: admin@roadwatch.ng | Role: Administrator | Status: Active', 'info');
+        openProfileModal();
+    });
+
+    // Profile modal overlay click handler
+    document.getElementById('profileModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeProfileModal();
+        }
     });
 
     // Logout handler
@@ -96,11 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.classList.remove('active', 'bg-white', 'bg-opacity-20', 'text-white');
-                nav.classList.add('text-green-100', 'hover:bg-white', 'hover:bg-opacity-10');
+                nav.classList.remove('active', 'bg-green-700', 'text-white');
+                nav.classList.add('text-gray-700', 'hover:bg-gray-100');
             });
-            this.classList.add('active', 'bg-white', 'bg-opacity-20', 'text-white');
-            this.classList.remove('text-green-100', 'hover:bg-white', 'hover:bg-opacity-10');
+            this.classList.add('active', 'bg-green-700', 'text-white');
+            this.classList.remove('text-gray-700', 'hover:bg-gray-100');
             const section = this.dataset.section;
             showSection(section);
         });
@@ -131,7 +152,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
     loadReports();
     initCharts();
-});
+}
+
+
 
 function showSection(sectionName) {
     document.querySelectorAll('.section-content').forEach(section => {
@@ -153,7 +176,7 @@ function showSection(sectionName) {
     if (sectionName === 'map') {
         setTimeout(() => {
             initializeMap();
-        }, 100);
+        }, 300);
     }
 
     if (sectionName === 'budget') {
@@ -166,27 +189,31 @@ function showSection(sectionName) {
 // Load dashboard statistics
 async function loadDashboardData() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-            headers: getAuthHeader()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                // If API rejects token, force logout (assuming handleLogout is globally available)
-                window.handleLogout(); 
-                return;
+        let reports = [];
+        
+        if (isDemoMode) {
+            reports = mockReports;
+        } else {
+            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+                headers: getAuthHeader()
+            });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.handleLogout(); 
+                    return;
+                }
+                throw new Error('Failed to fetch reports');
             }
-            throw new Error('Failed to fetch reports');
+            const data = await response.json();
+            reports = data.reports || data;
         }
-
-        const data = await response.json();
-        const reports = data.reports || data;
 
         const stats = {
             total: reports.length,
             submitted: reports.filter(r => r.status === 'submitted').length,
             under_review: reports.filter(r => r.status === 'under_review').length,
             scheduled: reports.filter(r => r.status === 'scheduled').length,
-            in_progress: reports.filter(r => r.status === 'under_review').length,
+            in_progress: reports.filter(r => r.status === 'in_progress').length,
             completed: reports.filter(r => r.status === 'completed').length
         };
 
@@ -209,19 +236,24 @@ async function loadDashboardData() {
 // Load all reports
 async function loadReports() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-            headers: getAuthHeader()
-        });
-        if (!response.ok) throw new Error('Failed to fetch reports');
-
-        const data = await response.json();
-        allReports = data.reports || data;
+        if (isDemoMode) {
+            allReports = mockReports;
+        } else {
+            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+                headers: getAuthHeader()
+            });
+            if (!response.ok) throw new Error('Failed to fetch reports');
+            const data = await response.json();
+            allReports = data.reports || data;
+        }
         filterReports(currentFilter);
 
     } catch (error) {
         console.error('Error loading reports:', error);
         const tbody = document.getElementById('reportsTableBody');
-        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Failed to load reports</td></tr>';
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Failed to load reports</td></tr>';
+        }
     }
 }
 
@@ -230,36 +262,39 @@ function loadRecentReports(reports) {
     container.innerHTML = '';
 
     if (reports.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-center">No recent reports</p>';
+        container.innerHTML = '<p class="text-gray-500 text-center col-span-full">No recent reports</p>';
         return;
     }
 
     reports.forEach(report => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50';
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition card-hover';
 
         const statusColor = getStatusColor(report.status);
         const severityColor = getSeverityColor(report.severity_score);
 
-        div.innerHTML = `
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 ${severityColor} rounded-lg flex items-center justify-center">
-                    <i class="fas fa-exclamation-triangle text-white"></i>
-                </div>
-                <div>
-                    <h4 class="font-medium text-gray-900">${report.location}</h4>
-                    <p class="text-sm text-gray-600">${report.damage_type || 'Analysis pending'} • Severity: ${report.severity_score || 'TBD'}/10</p>
+        card.innerHTML = `
+            <div class="relative h-40 bg-gray-200 overflow-hidden">
+                <img src="${report.image_url || 'https://via.placeholder.com/300x200?text=Road+Damage'}" alt="${report.location}" class="w-full h-full object-cover">
+                <div class="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${statusColor}">
+                    ${report.status.replace('_', ' ')}
                 </div>
             </div>
-            <div class="text-right">
-                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">
-                    ${report.status.replace('_', ' ')}
-                </span>
-                <p class="text-xs text-gray-500 mt-1">${new Date(report.created_at).toLocaleDateString()}</p>
+            <div class="p-4">
+                <h4 class="font-semibold text-gray-900 mb-2">${report.location}</h4>
+                <p class="text-sm text-gray-600 mb-3">${report.damage_type || 'Analysis pending'}</p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-500">${new Date(report.created_at).toLocaleDateString()}</span>
+                    <div class="flex items-center space-x-1">
+                        <div class="w-6 h-6 ${severityColor} rounded flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">${report.severity_score ? Math.round(report.severity_score * 100) : '?'}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
-        container.appendChild(div);
+        container.appendChild(card);
     });
 }
 
@@ -302,7 +337,7 @@ function createReportRow(report) {
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <span class="px-2 py-1 text-xs font-medium rounded-full text-white ${severityColor}">
-                ${report.severity_score || 'TBD'}/10
+                ${report.severity_score ? Math.round(report.severity_score * 100) : 'TBD'}
             </span>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
@@ -332,12 +367,10 @@ function getStatusColor(status) {
 
 function getSeverityColor(score) {
     if (!score) return 'bg-gray-500';
-    // Normalized score assuming score is out of 10
-    const normalizedScore = score / 10; 
-    if (normalizedScore >= 0.8) return 'bg-red-500'; // High (8-10)
-    if (normalizedScore >= 0.6) return 'bg-yellow-500'; // Medium-High (6-7.9)
-    if (normalizedScore >= 0.4) return 'bg-orange-500'; // Medium-Low (4-5.9)
-    return 'bg-green-500'; // Low (0-3.9)
+    if (score >= 0.7) return 'bg-red-500'; // High
+    if (score >= 0.3) return 'bg-yellow-500'; // Medium
+    if (score > 0) return 'bg-orange-500'; // Low
+    return 'bg-green-500'; // None
 }
 
 // View report details
@@ -410,7 +443,7 @@ function showReportModal(report) {
                 <div>
                     <h4 class="font-medium text-gray-900">Severity Score</h4>
                     <span class="px-2 py-1 text-xs font-medium rounded-full text-white ${severityColor}">
-                        ${report.severity_score || 'TBD'}/10
+                        ${report.severity_score ? Math.round(report.severity_score * 100) : 'TBD'}
                     </span>
                 </div>
                 <div>
@@ -534,6 +567,38 @@ async function updateReportStatus(reportId, newStatus) {
 
 function closeModal() {
     document.getElementById('reportModal').classList.add('hidden');
+}
+
+function openProfileModal() {
+    const profileModal = document.getElementById('profileModal');
+    profileModal.classList.remove('hidden');
+    
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+        fetch(`${API_BASE_URL}/api/admin/profile`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                document.getElementById('profileName').textContent = data.name || 'Administrator';
+                document.getElementById('profileEmail').textContent = data.email || 'admin@roadwatch.ng';
+                document.getElementById('profileUsername').textContent = data.username || 'admin';
+                document.getElementById('profileRole').textContent = data.role || 'System Administrator';
+                document.getElementById('profileDept').textContent = data.department || 'Infrastructure Management';
+                document.getElementById('profileLastLogin').textContent = data.last_login || 'Today';
+            }
+        })
+        .catch(error => console.error('Error loading profile:', error));
+    }
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').classList.add('hidden');
 }
 
 function refreshReports() {
@@ -743,7 +808,7 @@ function loadPriorityQueue(reports, budget = 5000000) {
         row.dataset.canAfford = canAfford;
 
         const statusColor = getStatusColor(report.status);
-        const severityColor = getSeverityColor(report.severity_score * 100);
+        const severityColor = getSeverityColor(report.severity_score);
 
         row.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap">
@@ -758,7 +823,7 @@ function loadPriorityQueue(reports, budget = 5000000) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-medium rounded-full text-white ${severityColor}">
-                    ${report.severity_score || 'TBD'}/10
+                    ${report.severity_score ? Math.round(report.severity_score * 100) : 'TBD'}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₦${(cost).toLocaleString()}</td>
@@ -928,18 +993,20 @@ async function scheduleSelected() {
 
 // Initialize charts
 async function initCharts() {
-    // Load reports and calculate over-time data
+    let reports = [];
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-            headers: getAuthHeader()
-        });
+        if (isDemoMode) {
+            reports = mockReports;
+        } else {
+            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+                headers: getAuthHeader()
+            });
+            if (!response.ok) throw new Error('Failed to fetch reports');
+            const data = await response.json();
+            reports = data.reports || data;
+        }
 
-        if (!response.ok) throw new Error('Failed to fetch reports');
-
-        const data = await response.json();
-        const reports = data.reports || data;
-
-        // Group reports by date (last 30 days)
         const dateMap = {};
         const today = new Date();
 
@@ -951,7 +1018,7 @@ async function initCharts() {
         }
 
         reports.forEach(report => {
-            const reportDate = new Date(report.created_at);
+            const reportDate = new Date(report.date || report.created_at || new Date());
             const dateStr = reportDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             if (dateStr in dateMap) {
                 dateMap[dateStr]++;
@@ -961,7 +1028,6 @@ async function initCharts() {
         const labels = Object.keys(dateMap);
         const chartData = Object.values(dateMap);
 
-        // Reports over time chart
         const ctx1 = document.getElementById('reportsChart');
         if (ctx1) {
             const gradient = ctx1.getContext('2d').createLinearGradient(0, 0, 0, 400);
@@ -1007,16 +1073,27 @@ async function initCharts() {
                 }
             });
         }
-    } catch (error) {
-        console.error('Error loading reports chart data:', error);
-    }
 
-    // Damage types chart - using real data
-    if (reports) {
-        const damageTypeMap = {};
+        const damageTypeMap = { 
+            'Pothole': 0, 
+            'Longitudinal Crack': 0, 
+            'Transverse Crack': 0, 
+            'Alligator Crack': 0, 
+            'Other Corruption': 0 
+        };
         reports.forEach(report => {
             const damageType = report.damage_type || 'Unknown';
-            damageTypeMap[damageType] = (damageTypeMap[damageType] || 0) + 1;
+            let mapKey = 'Other Corruption';
+            
+            if (damageType.includes('pothole')) mapKey = 'Pothole';
+            else if (damageType.includes('longitudinal')) mapKey = 'Longitudinal Crack';
+            else if (damageType.includes('transverse')) mapKey = 'Transverse Crack';
+            else if (damageType.includes('alligator')) mapKey = 'Alligator Crack';
+            else if (damageType.includes('corruption')) mapKey = 'Other Corruption';
+            
+            if (mapKey in damageTypeMap) {
+                damageTypeMap[mapKey]++;
+            }
         });
 
         const ctx2 = document.getElementById('damageTypesChart');
@@ -1027,7 +1104,7 @@ async function initCharts() {
                     labels: Object.keys(damageTypeMap),
                     datasets: [{
                         data: Object.values(damageTypeMap),
-                        backgroundColor: ['#16a34a', '#15803d', '#10b981', '#86efac', '#6ee7b7', '#a7f3d0']
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#86efac', '#6ee7b7']
                     }]
                 },
                 options: {
@@ -1041,6 +1118,9 @@ async function initCharts() {
                 }
             });
         }
+
+    } catch (error) {
+        console.error('Error loading charts:', error);
     }
 }
 
@@ -1069,25 +1149,20 @@ function initializeMap() {
         });
         mapInstance.addLayer(markerClusterGroup);
 
-        refreshMapMarkers();
+        setTimeout(() => {
+            mapInstance.invalidateSize();
+            refreshMapMarkers();
+        }, 100);
 
     } catch (error) {
         console.error('Error initializing map:', error);
     }
 }
 
-function getSeverityColor(score) {
-    if (!score) return 'gray';
-    if (score >= 70) return 'red';
-    if (score >= 30) return 'orange';
-    if (score > 0) return 'green';
-    return 'gray';
-}
-
 function getSeverityLabel(score) {
     if (!score) return 'None';
-    if (score >= 70) return 'High';
-    if (score >= 30) return 'Medium';
+    if (score >= 0.7) return 'High';
+    if (score >= 0.3) return 'Medium';
     if (score > 0) return 'Low';
     return 'None';
 }
@@ -1132,7 +1207,7 @@ async function refreshMapMarkers() {
             let pass = true;
 
             if (severityFilter !== 'all') {
-                const reportSeverity = getSeverityLabel(report.severity_score * 100);
+                const reportSeverity = getSeverityLabel(report.severity_score);
                 if (reportSeverity.toLowerCase() !== severityFilter) pass = false;
             }
 
@@ -1160,7 +1235,7 @@ async function refreshMapMarkers() {
             }
 
             if (!isNaN(lat) && !isNaN(lon)) {
-                const severity = getSeverityColor(report.severity_score * 100);
+                const severity = getSeverityColor(report.severity_score);
                 const icon = createMarkerIcon(severity, report.damage_type);
 
                 const marker = L.marker([lat, lon], { icon: icon });
@@ -1188,4 +1263,8 @@ async function refreshMapMarkers() {
     } catch (error) {
         console.error('Error refreshing map markers:', error);
     }
+}
+
+function addNewUser() {
+    alert('Add new user functionality would be implemented here');
 }

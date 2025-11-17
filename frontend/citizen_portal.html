@@ -148,10 +148,19 @@
         .mobile-menu {
             transform: translateX(100%);
             transition: transform 0.3s ease;
+            background-color: #ffffff !important;
+            overflow-y: auto;
         }
         
         .mobile-menu.active {
             transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu {
+                width: 100%;
+                right: 0;
+            }
         }
         
         .progress-ring {
@@ -197,8 +206,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center animate-slide-in-left">
-                    <div class="flex items-center bg-gradient-to-r from-green-600 to-green-500 p-2 rounded-lg mr-3">
-                        <i class="fas fa-road text-xl text-white"></i>
+                    <div class="p-2 rounded-lg mr-3">
+                        <img src="images/rlogo.png" alt="RoadWatch Logo" class="h-8 w-auto">
                     </div>
                     <div>
                         <span class="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">RoadWatch</span>
@@ -807,8 +816,8 @@
             <div class="grid md:grid-cols-4 gap-8">
                 <div class="md:col-span-2">
                     <div class="flex items-center mb-6">
-                        <div class="flex items-center bg-gradient-to-r from-green-600 to-green-500 p-2 rounded-lg mr-3">
-                            <i class="fas fa-road text-xl text-white"></i>
+                        <div class="p-2 rounded-lg mr-3">
+                            <img src="images/rlogo.png" alt="RoadWatch Logo" class="h-10 w-auto">
                         </div>
                         <div>
                             <span class="text-2xl font-bold">RoadWatch</span>

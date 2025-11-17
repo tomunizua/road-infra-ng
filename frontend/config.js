@@ -9,13 +9,9 @@ const API_CONFIG = {
             return 'http://localhost:5000';
         }
 
-        // Production: Replace with your deployed backend URL
-        // Example: return 'https://your-backend.onrender.com';
-        // For now, use environment variable or default
-        return window.ENV_API_URL || 'https://your-backend-url-here.onrender.com';
+        // Production backend URL
+        return 'https://roadwatch-ng.onrender.com';
     }
 };
 
-// Export for use in other scripts
-const API_BASE_URL = API_CONFIG.getApiUrl();
-console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('🌐 API Config loaded');
