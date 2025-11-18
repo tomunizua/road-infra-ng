@@ -99,80 +99,122 @@ if (document.readyState === 'loading') {
 }
 
 // Camera functionality
-document.getElementById('cameraBtn').addEventListener('click', async function() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' } // Use back camera on mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const cameraBtnElement = document.getElementById('cameraBtn');
+    if (cameraBtnElement) {
+        cameraBtnElement.addEventListener('click', async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' } // Use back camera on mobile
+                });
+
+                currentStream = stream;
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = stream;
+                video.play();
+
+                // Show camera preview and controls
+                document.getElementById('uploadOptions').classList.add('hidden');
+                document.getElementById('cameraPreview').classList.remove('hidden');
+                document.getElementById('cameraControls').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Camera access denied:', error);
+                alert('Camera access is required to take photos. Please allow camera access or use the upload option.');
+            }
         });
-
-        currentStream = stream;
-        const video = document.getElementById('cameraPreview');
-        video.srcObject = stream;
-        video.play();
-
-        // Show camera preview and controls
-        document.getElementById('uploadOptions').classList.add('hidden');
-        document.getElementById('cameraPreview').classList.remove('hidden');
-        document.getElementById('cameraControls').classList.remove('hidden');
-
-    } catch (error) {
-        console.error('Camera access denied:', error);
-        alert('Camera access is required to take photos. Please allow camera access or use the upload option.');
     }
 });
 
 // Capture photo from camera
-document.getElementById('captureBtn').addEventListener('click', function() {
-    const video = document.getElementById('cameraPreview');
-    const canvas = document.getElementById('cameraCanvas');
-    const ctx = canvas.getContext('2d');
+document.addEventListener('DOMContentLoaded', function() {
+    const captureBtnElement = document.getElementById('captureBtn');
+    if (captureBtnElement) {
+        captureBtnElement.addEventListener('click', function() {
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('cameraCanvas');
+            const ctx = canvas.getContext('2d');
 
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0);
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0);
 
-    // Convert to blob and create file
-    canvas.toBlob(function(blob) {
-        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+            // Convert to blob and create file
+            canvas.toBlob(function(blob) {
+                const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
-        // Create a new FileList-like object
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        document.getElementById('photoInput').files = dt.files;
+                // Create a new FileList-like object
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                document.getElementById('photoInput').files = dt.files;
 
-        // Show preview
-        const preview = document.getElementById('photoPreview');
-        preview.src = canvas.toDataURL();
-        preview.classList.remove('hidden');
+                // Show preview
+                const preview = document.getElementById('photoPreview');
+                preview.src = canvas.toDataURL();
+                preview.classList.remove('hidden');
 
-        // Stop camera and hide controls
-        stopCamera();
+                // Hide upload options
+                const uploadOptions = document.getElementById('uploadOptions');
+                if (uploadOptions) {
+                    uploadOptions.classList.add('hidden');
+                }
 
-    }, 'image/jpeg', 0.8);
+                // Stop camera and hide controls
+                stopCamera();
+
+            }, 'image/jpeg', 0.8);
+        });
+    }
 });
 
 // Retake photo
-document.getElementById('retakeBtn').addEventListener('click', function() {
-    // Clear the current preview and canvas, reset to camera mode
-    const video = document.getElementById('cameraPreview');
-    const canvas = document.getElementById('cameraCanvas');
+document.addEventListener('DOMContentLoaded', function() {
+    const retakeBtnElement = document.getElementById('retakeBtn');
+    if (retakeBtnElement) {
+        retakeBtnElement.addEventListener('click', function() {
+            // Clear the current preview and canvas, reset to camera mode
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('cameraCanvas');
+            const photoPreview = document.getElementById('photoPreview');
+            const uploadOptions = document.getElementById('uploadOptions');
 
-    // Clear canvas
-    canvas.width = 0;
-    canvas.height = 0;
+            // Clear canvas
+            canvas.width = 0;
+            canvas.height = 0;
 
-    // Restart video stream
-    if (currentStream) {
-        video.play();
+            // Hide photo preview
+            if (photoPreview) {
+                photoPreview.classList.add('hidden');
+                photoPreview.src = '';
+            }
+
+            // Clear file input
+            document.getElementById('photoInput').value = '';
+
+            // Restart video stream
+            if (currentStream) {
+                video.play();
+            }
+
+            // Show upload options
+            if (uploadOptions) {
+                uploadOptions.classList.remove('hidden');
+            }
+        });
     }
 });
 
 // Cancel camera
-document.getElementById('cancelCameraBtn').addEventListener('click', function() {
-    stopCamera();
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelCameraBtnElement = document.getElementById('cancelCameraBtn');
+    if (cancelCameraBtnElement) {
+        cancelCameraBtnElement.addEventListener('click', function() {
+            stopCamera();
+        });
+    }
 });
 
 function stopCamera() {
@@ -181,9 +223,20 @@ function stopCamera() {
         currentStream = null;
     }
 
-    document.getElementById('uploadOptions').classList.remove('hidden');
-    document.getElementById('cameraPreview').classList.add('hidden');
-    document.getElementById('cameraControls').classList.add('hidden');
+    const uploadOptions = document.getElementById('uploadOptions');
+    const cameraPreview = document.getElementById('cameraPreview');
+    const cameraControls = document.getElementById('cameraControls');
+    const photoPreview = document.getElementById('photoPreview');
+
+    if (uploadOptions && !photoPreview.src) {
+        uploadOptions.classList.remove('hidden');
+    }
+    if (cameraPreview) {
+        cameraPreview.classList.add('hidden');
+    }
+    if (cameraControls) {
+        cameraControls.classList.add('hidden');
+    }
 }
 
 // Lagos LGA coordinate boundaries (approximate)
@@ -222,95 +275,121 @@ function getLGAFromCoordinates(lat, lng) {
 }
 
 // Auto-detect location
-document.getElementById('detectLocationBtn').addEventListener('click', function() {
-    const button = this;
-    const spinner = document.getElementById('locationSpinner');
-    const gpsDisplay = document.getElementById('gpsDisplay');
-    const gpsCoords = document.getElementById('gpsCoords');
-    const detectedLGA = document.getElementById('detectedLGA');
+document.addEventListener('DOMContentLoaded', function() {
+    const detectLocationBtnElement = document.getElementById('detectLocationBtn');
+    if (detectLocationBtnElement) {
+        detectLocationBtnElement.addEventListener('click', function() {
+            const button = this;
+            const spinner = document.getElementById('locationSpinner');
+            const gpsDisplay = document.getElementById('gpsDisplay');
+            const gpsCoords = document.getElementById('gpsCoords');
+            const detectedLGA = document.getElementById('detectedLGA');
 
-    button.disabled = true;
-    spinner.classList.remove('hidden');
-
-    if (!navigator.geolocation) {
-        alert('Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
-        button.disabled = false;
-        spinner.classList.add('hidden');
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-
-            gpsCoordinates = { lat, lng };
-
-            // Display GPS coordinates
-            gpsCoords.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-
-            // Determine LGA from coordinates
-            const detectedLGAName = getLGAFromCoordinates(lat, lng);
-
-            if (detectedLGAName) {
-                detectedLGA.innerHTML = `<strong>LGA Detected:</strong> ${detectedLGAName}`;
-                document.getElementById('lga').value = detectedLGAName;
-            } else {
-                detectedLGA.innerHTML = `<strong>Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
-            }
-
-            gpsDisplay.classList.remove('hidden');
-
-            // Update button appearance
-            button.disabled = false;
-            spinner.classList.add('hidden');
-            button.innerHTML = 'Location Detected Successfully';
-            button.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-700', 'hover:to-blue-800');
-            button.classList.add('from-green-600', 'to-green-700', 'hover:from-green-700', 'hover:to-green-800');
             button.disabled = true;
-        },
-        function(error) {
-            let message = 'Unable to get your location.\n\n';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message += 'Please allow location access in your browser settings and try again.\n\nOr manually enter your location below.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message += 'Location information is not available. Please check your GPS and try again.\n\nOr manually enter your location below.';
-                    break;
-                case error.TIMEOUT:
-                    message += 'Location request timed out. Please try again in an area with better GPS signal.\n\nOr manually enter your location below.';
-                    break;
+            spinner.classList.remove('hidden');
+
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
+                button.disabled = false;
+                spinner.classList.add('hidden');
+                return;
             }
-            alert(message);
-            button.disabled = false;
-            spinner.classList.add('hidden');
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-        }
-    );
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    gpsCoordinates = { lat, lng };
+
+                    // Display GPS coordinates
+                    gpsCoords.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+
+                    // Determine LGA from coordinates
+                    const detectedLGAName = getLGAFromCoordinates(lat, lng);
+
+                    if (detectedLGAName) {
+                        detectedLGA.innerHTML = `<strong>LGA Detected:</strong> ${detectedLGAName}`;
+                        document.getElementById('lga').value = detectedLGAName;
+                    } else {
+                        detectedLGA.innerHTML = `<strong>Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
+                    }
+
+                    gpsDisplay.classList.remove('hidden');
+
+                    // Update button appearance
+                    button.disabled = false;
+                    spinner.classList.add('hidden');
+                    button.innerHTML = 'Location Detected Successfully';
+                    button.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-700', 'hover:to-blue-800');
+                    button.classList.add('from-green-600', 'to-green-700', 'hover:from-green-700', 'hover:to-green-800');
+                    button.disabled = true;
+                },
+                function(error) {
+                    let message = 'Unable to get your location.\n\n';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message += 'Please allow location access in your browser settings and try again.\n\nOr manually enter your location below.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message += 'Location information is not available. Please check your GPS and try again.\n\nOr manually enter your location below.';
+                            break;
+                        case error.TIMEOUT:
+                            message += 'Location request timed out. Please try again in an area with better GPS signal.\n\nOr manually enter your location below.';
+                            break;
+                    }
+                    alert(message);
+                    button.disabled = false;
+                    spinner.classList.add('hidden');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+        });
+    }
 });
 
 // Photo preview functionality
-document.getElementById('photoInput').addEventListener('change', function(e) {
-    console.log("File change event triggered.", e.target.files);
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const preview = document.getElementById('photoPreview');
-            preview.src = event.target.result;
-            preview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInputElement = document.getElementById('photoInput');
+    if (photoInputElement) {
+        photoInputElement.addEventListener('change', function(e) {
+            console.log("File change event triggered.", e.target.files);
+            const file = e.target.files[0];
+            if (file) {
+                console.log("File selected:", file.name, "Size:", file.size);
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    console.log("FileReader onload triggered");
+                    const preview = document.getElementById('photoPreview');
+                    console.log("Preview element:", preview);
+                    preview.src = event.target.result;
+                    console.log("Preview src set");
+                    preview.classList.remove('hidden');
+                    console.log("Hidden class removed. Current classes:", preview.className);
+                    
+                    // Hide upload options when image is selected
+                    const uploadOptions = document.getElementById('uploadOptions');
+                    if (uploadOptions) {
+                        uploadOptions.classList.add('hidden');
+                    }
+                };
+                reader.onerror = function(error) {
+                    console.error("FileReader error:", error);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    } else {
+        console.error("photoInput element not found!");
     }
 });
 
 // Enhanced form submission with loading states
-document.getElementById('reportForm').addEventListener('submit', async function(e) {
+async function handleReportSubmit(e) {
     e.preventDefault();
 
     const submitButton = e.target.querySelector('button[type="submit"]');
@@ -513,6 +592,14 @@ document.getElementById('reportForm').addEventListener('submit', async function(
         // Reset button state
         submitButton.disabled = false;
         spinner.classList.add('hidden');
+    }
+}
+
+// Attach form submission listener when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    const reportFormElement = document.getElementById('reportForm');
+    if (reportFormElement) {
+        reportFormElement.addEventListener('submit', handleReportSubmit);
     }
 });
 
