@@ -67,14 +67,18 @@ CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:5500", 
-            "http://127.0.0.1:5500", 
+            "http://127.0.0.1:5500",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
             "https://roadwatchnigeria.vercel.app",
             "https://www.roadwatchnigeria.site", 
-            "https://roadwatchnigeria.site",  
+            "https://roadwatchnigeria.site",
+            "https://roadwatch-ng.vercel.app",
             BASE_URL 
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
     }
 })
 
@@ -105,6 +109,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Create database tables on startup
+with app.app_context():
+    try:
+        db.create_all()
+        print("✓ Database tables initialized")
+    except Exception as e:
+        print(f"⚠ Database initialization warning: {e}")
 
 # Initialize pipeline
 pipeline = None
@@ -325,7 +337,10 @@ def submit_report():
     except Exception as e:
         print(f"Error submitting report: {e}")
         traceback.print_exc()
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except:
+            pass
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 def estimate_repair_cost(damage_type, severity_score, damage_count):

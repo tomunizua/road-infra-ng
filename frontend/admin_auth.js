@@ -30,11 +30,17 @@ function initializeAuth() {
         document.getElementById('sidebar').style.transform = 'translateX(0)';
         
         setTimeout(function() {
-            loadDashboardData(); 
-            loadReports();
-            initCharts();
-            if (typeof initDashboard === 'function') {
-                initDashboard();
+            try {
+                loadDashboardData(); 
+                loadReports();
+                if (typeof initCharts === 'function') {
+                    initCharts();
+                }
+                if (typeof initDashboard === 'function') {
+                    initDashboard();
+                }
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
             }
         }, 100);
 

@@ -4,22 +4,52 @@ const RENDER_API_BASE = 'https://roadwatch-ng.onrender.com';
 // Mobile menu toggle
 function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
-    menu.classList.toggle('active');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (menu && overlay) {
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
 }
+
+// Close mobile menu when clicking overlay
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) {
+                menu.classList.remove('active');
+                this.classList.remove('active');
+            }
+        });
+    }
+});
 
 // Close mobile menu when clicking outside or on a link
 document.addEventListener('click', function(e) {
     const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
     const hamburger = document.querySelector('button[onclick="toggleMobileMenu()"]');
 
-    // Close if clicking outside menu and hamburger
-    if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+    if (!menu || !overlay || !hamburger) return;
+
+    // Close if clicking overlay
+    if (e.target === overlay) {
         menu.classList.remove('active');
+        overlay.classList.remove('active');
+        return;
+    }
+
+    // Close if clicking outside menu and hamburger
+    if (!menu.contains(e.target) && !hamburger.contains(e.target) && e.target !== hamburger && !hamburger.contains(e.target)) {
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
     }
 
     // Close if clicking a link inside menu
     if (e.target.tagName === 'A' && menu.contains(e.target)) {
         menu.classList.remove('active');
+        overlay.classList.remove('active');
     }
 });
 
@@ -50,30 +80,12 @@ function restoreTrackingNumberFromStorage() {
 
     if (savedTrackingNumber && savedTime) {
         const timeAgo = Date.now() - parseInt(savedTime);
-        // Show tracking number for up to 24 hours
-        if (timeAgo < 24 * 60 * 60 * 1000) {
-            const successMessage = document.getElementById('successMessage');
-            const trackingNumberElement = document.getElementById('trackingNumber');
-
-            trackingNumberElement.textContent = savedTrackingNumber;
-
-            // Show success message
-            successMessage.classList.remove('hidden');
-            successMessage.style.display = 'block';
-            successMessage.style.visibility = 'visible';
-            successMessage.style.opacity = '1';
-
-            console.log('Restored tracking number from storage:', savedTrackingNumber);
-
-            // Scroll to it after a short delay
-            setTimeout(() => {
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
-        } else {
-            // Clear if older than 24 hours
+        // Clear old data if older than 24 hours
+        if (timeAgo >= 24 * 60 * 60 * 1000) {
             localStorage.removeItem('lastTrackingNumber');
             localStorage.removeItem('lastTrackingNumberTime');
         }
+        // Do NOT restore the tracking number to UI - it will be set only when a new report is submitted
     }
 }
 
@@ -490,7 +502,13 @@ document.getElementById('reportForm').addEventListener('submit', async function(
 
     } catch (error) {
         console.error('Full error:', error);
-        alert('Error submitting report: ' + error.message);
+        let errorMessage = 'Error submitting report: ' + error.message;
+        
+        if (error.message === 'Failed to fetch') {
+            errorMessage = 'Backend server is unavailable. Please try again in a few moments.';
+        }
+        
+        alert(errorMessage);
     } finally {
         // Reset button state
         submitButton.disabled = false;

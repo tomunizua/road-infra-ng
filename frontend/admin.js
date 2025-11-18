@@ -186,6 +186,59 @@ function showSection(sectionName) {
     }
 }
 
+function getStatusColor(status) {
+    const statusColorMap = {
+        'submitted': 'bg-blue-100 text-blue-800',
+        'under_review': 'bg-yellow-100 text-yellow-800',
+        'scheduled': 'bg-purple-100 text-purple-800',
+        'in_progress': 'bg-orange-100 text-orange-800',
+        'completed': 'bg-green-100 text-green-800'
+    };
+    return statusColorMap[status] || 'bg-gray-100 text-gray-800';
+}
+
+function getSeverityColor(severityScore) {
+    if (severityScore >= 0.7) {
+        return 'bg-red-500';
+    } else if (severityScore >= 0.3) {
+        return 'bg-orange-500';
+    } else {
+        return 'bg-yellow-500';
+    }
+}
+
+function getSeverityLabel(severityScore) {
+    if (severityScore >= 0.7) {
+        return 'High';
+    } else if (severityScore >= 0.3) {
+        return 'Medium';
+    } else {
+        return 'Low';
+    }
+}
+
+function getSeverityColorName(severityScore) {
+    if (severityScore >= 0.7) {
+        return 'red';
+    } else if (severityScore >= 0.3) {
+        return 'orange';
+    } else {
+        return 'yellow';
+    }
+}
+
+function loadBudgetOptimization() {
+    try {
+        console.log('Loading budget optimization data...');
+        const budgetContent = document.getElementById('budgetSection');
+        if (budgetContent) {
+            budgetContent.innerHTML = '<div class="p-8"><p class="text-gray-500">Budget optimization data will be loaded here.</p></div>';
+        }
+    } catch (error) {
+        console.error('Error loading budget optimization:', error);
+    }
+}
+
 // Load dashboard statistics
 async function loadDashboardData() {
     try {
@@ -346,9 +399,8 @@ function createReportRow(report) {
             </span>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(report.created_at).toLocaleDateString()}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-            <button onclick="viewReport('${report.tracking_number}')" class="text-green-600 hover:text-green-900">View</button>
-            <button onclick="editReport('${report.tracking_number}')" class="text-blue-600 hover:text-blue-900">Edit</button>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button onclick="viewReport('${report.tracking_number}')" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 font-medium transition">View Details</button>
         </td>
     `;
 
@@ -399,22 +451,7 @@ async function viewReport(trackingNumber) {
     }
 }
 
-// Edit report
-async function editReport(trackingNumber) {
-    try {
-        const report = allReports.find(r => r.tracking_number === trackingNumber);
-        if (!report) {
-            showToast('Error', 'Report not found', 'error');
-            return;
-        }
 
-        showEditReportModal(report);
-
-    } catch (error) {
-        console.error('Error in edit mode:', error);
-        showToast('Error', 'Failed to open edit mode', 'error');
-    }
-}
 
 function showReportModal(report) {
     const modal = document.getElementById('reportModal');
@@ -504,21 +541,38 @@ function showReportModal(report) {
             </div>
             `}
 
-            <div class="flex space-x-3">
-                <button onclick="updateReportStatus(${report.id}, 'scheduled')" class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition font-medium">
-                    <i class="fas fa-calendar-check mr-1"></i>Schedule Repair
-                </button>
-                <button onclick="updateReportStatus(${report.id}, 'under_review')" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition font-medium">
-                    <i class="fas fa-eye mr-1"></i>Mark Under Review
-                </button>
-                <button onclick="updateReportStatus(${report.id}, 'completed')" class="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition font-medium">
-                    <i class="fas fa-check mr-1"></i>Mark Completed
-                </button>
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 class="font-semibold text-gray-900 mb-3">Update Status</h4>
+                <div class="flex gap-2 items-center">
+                    <select id="statusSelect" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-700 font-medium">
+                        <option value="">-- Select Status --</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <button onclick="updateReportStatusFromModal(${report.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+                        Update
+                    </button>
+                </div>
             </div>
         </div>
     `;
 
     modal.classList.remove('hidden');
+}
+
+function updateReportStatusFromModal(reportId) {
+    const selectElement = document.getElementById('statusSelect');
+    const newStatus = selectElement.value;
+
+    if (!newStatus) {
+        alert('Please select a status');
+        return;
+    }
+
+    updateReportStatus(reportId, newStatus);
 }
 
 async function updateReportStatus(reportId, newStatus) {
@@ -1167,10 +1221,19 @@ function getSeverityLabel(score) {
     return 'None';
 }
 
+function getSeverityColorName(score) {
+    if (!score) return 'gray';
+    if (score >= 0.7) return 'red';
+    if (score >= 0.3) return 'orange';
+    if (score > 0) return 'yellow';
+    return 'green';
+}
+
 function createMarkerIcon(severity, damageType) {
     const color = {
         'red': '#ef4444',
         'orange': '#f59e0b',
+        'yellow': '#eab308',
         'green': '#22c55e',
         'gray': '#9ca3af'
     }[severity] || '#9ca3af';
@@ -1235,7 +1298,7 @@ async function refreshMapMarkers() {
             }
 
             if (!isNaN(lat) && !isNaN(lon)) {
-                const severity = getSeverityColor(report.severity_score);
+                const severity = getSeverityColorName(report.severity_score);
                 const icon = createMarkerIcon(severity, report.damage_type);
 
                 const marker = L.marker([lat, lon], { icon: icon });

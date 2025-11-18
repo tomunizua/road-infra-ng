@@ -146,20 +146,40 @@
         }
         
         .mobile-menu {
+            position: fixed;
+            top: 64px;
+            right: 0;
+            width: 100%;
+            height: calc(100vh - 64px);
             transform: translateX(100%);
             transition: transform 0.3s ease;
             background-color: #ffffff !important;
             overflow-y: auto;
+            z-index: 40;
         }
         
         .mobile-menu.active {
             transform: translateX(0);
         }
         
-        @media (max-width: 768px) {
+        .mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 35;
+        }
+        
+        .mobile-menu-overlay.active {
+            display: block;
+        }
+        
+        @media (min-width: 769px) {
             .mobile-menu {
-                width: 100%;
-                right: 0;
+                display: none !important;
             }
         }
         
@@ -171,14 +191,6 @@
         
         .animate-slide-up {
             animation: slideUp 0.5s ease-out forwards;
-        }
-        
-        /* FORCE SUCCESS MESSAGE TO STAY VISIBLE */
-        #successMessage:not(.hidden-by-user) {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
         }
         
         /* Custom scrollbar */
@@ -207,7 +219,7 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center animate-slide-in-left">
                     <div class="p-2 rounded-lg mr-3">
-                        <img src="frontend/images/rlogo.png" alt="RoadWatch Logo" class="h-8 w-auto">
+                        <img src="images/rlogo.png" alt="RoadWatch Logo" class="h-8 w-auto">
                     </div>
                     <div>
                         <span class="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">RoadWatch</span>
@@ -231,7 +243,7 @@
         </div>
         
         <!-- Mobile Menu -->
-        <div id="mobileMenu" class="mobile-menu fixed top-16 right-0 h-full w-64 bg-white shadow-2xl md:hidden z-40">
+        <div id="mobileMenu" class="mobile-menu fixed top-16 right-0 h-full w-full bg-white shadow-2xl md:hidden z-40">
             <div class="p-6">
                 <div class="space-y-4">
                     <a href="#home" class="block text-gray-700 hover:text-green-600 font-medium py-3 px-4 rounded-lg transition-colors hover:bg-green-50">Home</a>
@@ -241,6 +253,9 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Mobile Menu Overlay -->
+        <div id="mobileMenuOverlay" class="mobile-menu-overlay md:hidden"></div>
     </nav>
 
     <!-- Hero Section -->
@@ -337,6 +352,69 @@
         </div>
     </section>
 
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-gradient-to-b from-white to-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About RoadWatch Nigeria</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Empowering citizens to improve Nigerian infrastructure through AI-powered community reporting and data-driven decision making.</p>
+            </div>
+
+            <!-- Mission Statement with Image -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-12 border border-gray-100">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Our Mission</h3>
+                        <p class="text-gray-600 mb-4">We're transforming how Nigeria manages road infrastructure by creating a transparent, data-driven system that connects citizens, governments, and maintenance teams.</p>
+                        <p class="text-gray-600">Every report submitted helps build a comprehensive database that informs better maintenance planning and budget allocation for safer, more reliable roads.</p>
+                    </div>
+                    <div class="rounded-xl overflow-hidden shadow-md">
+                        <img src="frontend/images/roadcommunity.jpg" alt="RoadWatch Community" class="w-full h-64 object-cover">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Goals -->
+            <div>
+                <h3 class="text-3xl font-bold text-gray-900 mb-12 text-center">Our Key Goals</h3>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-md hover:shadow-lg hover:border-green-300 transition-all duration-300">
+                        <div class="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-binoculars text-green-600 text-2xl"></i>
+                        </div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Early Detection</h5>
+                        <p class="text-gray-600 text-sm">Reduce road damage through early detection and swift response</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-md hover:shadow-lg hover:border-green-300 transition-all duration-300">
+                        <div class="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-chart-pie text-green-600 text-2xl"></i>
+                        </div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Budget Optimization</h5>
+                        <p class="text-gray-600 text-sm">Optimize maintenance budgets with data-driven allocation</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-md hover:shadow-lg hover:border-green-300 transition-all duration-300">
+                        <div class="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-database text-green-600 text-2xl"></i>
+                        </div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Data-Driven Decisions</h5>
+                        <p class="text-gray-600 text-sm">Enable informed decision making through comprehensive analytics</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-md hover:shadow-lg hover:border-green-300 transition-all duration-300">
+                        <div class="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-users text-green-600 text-2xl"></i>
+                        </div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Community Engagement</h5>
+                        <p class="text-gray-600 text-sm">Engage communities in improving Nigeria's infrastructure</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- How It Works Section -->
     <section class="py-20 bg-white relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent"></div>
@@ -373,7 +451,7 @@
                     </div>
                     <h3 class="text-2xl font-bold mb-4 text-gray-900">AI Analysis</h3>
                     <p class="text-gray-600 mb-6">Our machine learning model analyzes the image, detects damage type, and calculates severity score automatically.</p>
-                    <div class="text-sm text-orange-600 font-semibold bg-orange-50 rounded-lg py-2 px-4">
+                    <div class="text-sm text-green-600 font-semibold bg-green-50 rounded-lg py-2 px-4">
                         <i class="fas fa-bolt mr-1"></i>Instant Results
                     </div>
                 </div>
@@ -388,85 +466,8 @@
                     </div>
                     <h3 class="text-2xl font-bold mb-4 text-gray-900">Repair & Track</h3>
                     <p class="text-gray-600 mb-6">Government prioritizes repairs based on AI analysis and budget optimization. Track progress via SMS & web.</p>
-                    <div class="text-sm text-blue-600 font-semibold bg-blue-50 rounded-lg py-2 px-4">
+                    <div class="text-sm text-green-600 font-semibold bg-green-50 rounded-lg py-2 px-4">
                         <i class="fas fa-check-circle mr-1"></i>Real-time Updates
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
-                <div class="animate-slide-in-left">
-                    <span class="text-green-600 font-semibold text-sm uppercase tracking-wider mb-2 block">Why Choose RoadWatch</span>
-                    <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Building Safer Roads Together</h2>
-                    <p class="text-xl text-gray-600 mb-8">RoadWatch Nigeria is revolutionizing infrastructure management through AI-powered community reporting. Every report you submit helps create a comprehensive database for better road maintenance planning.</p>
-                    
-                    <div class="space-y-6">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-4">
-                                <i class="fas fa-shield-alt text-white text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-2">Secure & Private</h3>
-                                <p class="text-gray-600">Your personal information is protected with enterprise-grade security</p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mr-4">
-                                <i class="fas fa-users text-white text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-2">Community Driven</h3>
-                                <p class="text-gray-600">Join thousands of Nigerians making a difference in infrastructure</p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
-                                <i class="fas fa-brain text-white text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-2">AI-Powered</h3>
-                                <p class="text-gray-600">Advanced machine learning for accurate damage detection and prioritization</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="animate-slide-in-right">
-                    <div class="relative">
-                        <!-- Community Image Placeholder -->
-                        <div class="bg-gradient-to-br from-green-100 to-orange-100 rounded-3xl p-8 shadow-xl relative overflow-hidden">
-                            <!-- Placeholder for real community image -->
-                            <div class="bg-white rounded-2xl p-6 shadow-lg text-center mb-6">
-                                <img src="frontend/images/community2.png" alt="Nigerian community members" class="w-full h-48 object-cover rounded-lg mb-4">
-                                <h3 class="text-lg text-gray-600 mb-4">Be a part of change in the community</h3>
-                            </div>
-                            
-                            <div class="grid grid-cols-2 gap-6">
-                                <div class="bg-white rounded-2xl p-4 shadow-lg">
-                                    <div class="text-2xl font-bold text-green-600 mb-1">90%</div>
-                                    <div class="text-xs text-gray-600">Detection Accuracy</div>
-                                </div>
-                                <div class="bg-white rounded-2xl p-4 shadow-lg">
-                                    <div class="text-2xl font-bold text-orange-600 mb-1">24h</div>
-                                    <div class="text-xs text-gray-600">Avg Response Time</div>
-                                </div>
-                                <div class="bg-white rounded-2xl p-4 shadow-lg">
-                                    <div class="text-2xl font-bold text-blue-600 mb-1">₦25B</div>
-                                    <div class="text-xs text-gray-600">Budget Optimized</div>
-                                </div>
-                                <div class="bg-white rounded-2xl p-4 shadow-lg">
-                                    <div class="text-2xl font-bold text-green-600 mb-1">15+</div>
-                                    <div class="text-xs text-gray-600">States Covered</div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -483,13 +484,13 @@
             </div>
 
             <!-- Lagos Info Banner -->
-            <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
-                <div class="flex-shrink-0 text-blue-600 text-lg mt-0.5">
+            <div class="mb-6 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3">
+                <div class="flex-shrink-0 text-orange-600 text-lg mt-0.5">
                     <i class="fas fa-info-circle"></i>
                 </div>
                 <div>
-                    <div class="font-semibold text-blue-900">Currently Available in Lagos State</div>
-                    <p class="text-sm text-blue-800 mt-1">This pilot program is currently serving Lagos State. We'll be expanding to other states soon! Reports will be automatically classified by Local Government Area (LGA) for efficient management.</p>
+                    <div class="font-semibold text-orange-900">Currently Available in Lagos State</div>
+                    <p class="text-sm text-orange-800 mt-1">This pilot program is currently serving Lagos State. We'll be expanding to other states soon! Reports will be automatically classified by Local Government Area (LGA) for efficient management.</p>
                 </div>
             </div>
 
@@ -515,7 +516,7 @@
                                     <button type="button" id="cameraBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                                         <i class="fas fa-camera mr-2"></i>Take Photo
                                     </button>
-                                    <label for="photoInput" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg cursor-pointer transition-colors flex items-center justify-center">
+                                    <label for="photoInput" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg cursor-pointer transition-colors flex items-center justify-center">
                                         <i class="fas fa-upload mr-2"></i>Upload File
                                     </label>
                                 </div>
@@ -549,11 +550,11 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-3">
                             <i class="fas fa-map text-green-600 mr-2"></i>Location Detection
                         </label>
-                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
-                            <p class="text-sm text-blue-800 mb-3">
+                        <div class="bg-green-50 border-2 rounded-xl p-4 mb-4">
+                            <p class="text-sm text-green-800 mb-3">
                                 <i class="fas fa-info-circle mr-2"></i>We'll use your GPS location to determine your Local Government Area (LGA) in Lagos for accurate reporting.
                             </p>
-                            <button type="button" id="detectLocationBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                            <button type="button" id="detectLocationBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
                                 <i class="fas fa-crosshairs mr-2 text-lg"></i>Detect My Location (GPS)
                                 <div id="locationSpinner" class="hidden ml-3">
                                     <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -874,6 +875,6 @@
         </div>
     </footer>
 
-    <script src="frontend/citizen_portal.js"></script>
+    <script src="citizen_portal.js"></script>
 </body>
 </html>
