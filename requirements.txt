@@ -5,7 +5,6 @@ Flask-SQLAlchemy
 Flask-Marshmallow
 Flask-JWT-Extended
 marshmallow-sqlalchemy
-tensorflow
 Pillow
 numpy
 pulp
@@ -15,10 +14,7 @@ ultralytics
 optuna
 wandb
 plotly
-matplotlib
-seaborn
 opencv-python
-pandas
 albumentations
 psycopg2-binary
 requests
