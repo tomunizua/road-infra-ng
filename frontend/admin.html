@@ -175,7 +175,7 @@
             <div class="flex items-center justify-between p-4 border-b border-gray-200">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center overflow-hidden">
-                        <img src="images/rlogo.png" alt="RoadWatch" class="h-8 w-auto">
+                        <img src="frontend/images/rlogo.png" alt="RoadWatch" class="h-8 w-auto">
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-gray-900">RoadWatch</h2>
@@ -330,7 +330,7 @@
                     </div>
                 </div>
 
-                <div id="reportsSection" class="section-content hidden">
+                <div id="reportsSection" class="section-content" style="display: none;">
                     <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div class="flex flex-wrap gap-2">
@@ -368,7 +368,7 @@
                     </div>
                 </div>
 
-                <div id="mapSection" class="section-content hidden">
+                <div id="mapSection" class="section-content" style="display: none;">
                     <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                         <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center"><i class="fas fa-map text-green-600 mr-2"></i>Road Damage Map View</h3>
                         
@@ -439,7 +439,7 @@
                     </div>
                 </div>
 
-                <div id="budgetSection" class="section-content hidden">
+                <div id="budgetSection" class="section-content" style="display: none;">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100 hover:border-orange-300">
                             <div class="flex items-center justify-between">
@@ -515,13 +515,13 @@
                     
                     <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                         <div class="mb-6">
-                            <h3 class="text-lg font-bold text-gray-900 flex items-center mb-4"><i class="fas fa-list-ol text-blue-600 mr-2"></i>Repair Priority Optimization</h3>
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center mb-4"><i class="fas fa-list-ol text-green-600 mr-2"></i>Repair Priority Optimization</h3>
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="flex items-center gap-2">
                                     <label class="text-sm font-medium text-gray-700">Enter Budget (₦):</label>
                                     <input type="number" id="budgetInput" value="5000000" class="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium">
                                 </div>
-                                <button onclick="optimizeBudget()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md"><i class="fas fa-wand-magic-sparkles mr-2"></i>Optimize</button>
+                                <button onclick="optimizeBudget()" class="bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md"><i class="fas fa-wand-magic-sparkles mr-2"></i>Optimize</button>
                                 <button onclick="scheduleSelected()" class="bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md" id="bulkScheduleBtn" style="display: none;"><i class="fas fa-check-double mr-2"></i>Schedule Selected (<span id="selectedCount">0</span>)</button>
                             </div>
                             <p class="text-xs text-gray-500">Click "Optimize" to sort repairs by priority. Then select repairs and schedule them.</p>
@@ -548,7 +548,7 @@
                     </div>
                 </div>
                 
-                <div id="usersSection" class="section-content hidden">
+                <div id="usersSection" class="section-content" style="display: none;">
                     <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-gray-900 flex items-center"><i class="fas fa-users text-green-600 mr-2"></i>User Management</h3>
@@ -589,7 +589,7 @@
                     </div>
                 </div>
 
-                <div id="settingsSection" class="section-content hidden">
+                <div id="settingsSection" class="section-content" style="display: none;">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                             <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center"><i class="fas fa-sliders-h text-green-600 mr-2"></i>System Configuration</h3>
@@ -712,6 +712,9 @@
     </div>
     
     <div id="toastContainer" class="toast-container"></div>
+    <!-- <script src="config.js"></script>
+    <script src="admin.js"></script>
+    <script src="admin_auth.js"></script> -->
     <script src="frontend/config.js"></script>
     <script src="frontend/admin.js"></script>
     <script src="frontend/admin_auth.js"></script>

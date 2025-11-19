@@ -502,9 +502,9 @@
                             <i class="fas fa-camera text-green-600 mr-2"></i>Upload Photo of Road Damage
                         </label>
                         <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-green-400 transition-colors duration-300">
-                            <input type="file" id="photoInput" accept="image/*" required class="hidden">
-                            <video id="cameraPreview" class="hidden w-full max-w-sm mx-auto rounded-lg mb-4"></video>
-                            <canvas id="cameraCanvas" class="hidden"></canvas>
+                            <input type="file" id="photoInput" accept="image/*" required style="display: none;">
+                            <video id="cameraPreview" style="display: none;" class="w-full max-w-sm mx-auto rounded-lg mb-4"></video>
+                            <canvas id="cameraCanvas" style="display: none;"></canvas>
                             
                             <div id="uploadOptions" class="space-y-4">
                                 <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -526,7 +526,7 @@
                             </div>
                             
                             <!-- Camera Controls (hidden initially) -->
-                            <div id="cameraControls" class="hidden space-y-4">
+                            <div id="cameraControls" style="display: none;" class="space-y-4">
                                 <div class="flex gap-3 justify-center">
                                     <button type="button" id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
                                         <i class="fas fa-camera mr-2"></i>Capture
@@ -542,7 +542,21 @@
                         </div>
                         
                         <!-- Photo Preview -->
-                        <img id="photoPreview" class="hidden mt-4 max-w-full h-48 object-cover rounded-xl shadow-lg">
+                        <div id="previewContainer" style="display: none; margin-top: 1rem;">
+                            <div style="max-width: 400px; max-height: 300px; margin: 0 auto; overflow: hidden; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                                <img id="photoPreview" alt="Photo preview" style="display: block; width: 100%; height: 100%; object-fit: contain;">
+                            </div>
+                            
+                            <!-- Change Photo Buttons -->
+                            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                                <button type="button" id="changePhotoBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-exchange-alt mr-2"></i>Change Photo
+                                </button>
+                                <button type="button" id="removePhotoBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-trash mr-2"></i>Remove Photo
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- GPS Detection - Primary Action -->
@@ -556,14 +570,14 @@
                             </p>
                             <button type="button" id="detectLocationBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
                                 <i class="fas fa-crosshairs mr-2 text-lg"></i>Detect My Location (GPS)
-                                <div id="locationSpinner" class="hidden ml-3">
+                                <div id="locationSpinner" style="display: none;" class="ml-3">
                                     <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                 </div>
                             </button>
                         </div>
                         
                         <!-- GPS Success Display -->
-                        <div id="gpsDisplay" class="hidden mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                        <div id="gpsDisplay" style="display: none;" class="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
                             <div class="flex items-start gap-3">
                                 <i class="fas fa-check-circle text-green-600 text-lg mt-0.5"></i>
                                 <div class="flex-1">
@@ -653,9 +667,9 @@
                             <label for="consentCheckbox" class="cursor-pointer flex-1">
                                 <span class="text-xs text-gray-700 leading-relaxed">
                                     By submitting this report, I consent to RoadWatch Nigeria processing my data in accordance with our 
-                                    <a href="#privacy" class="text-green-600 hover:text-green-700 font-medium underline">Privacy Policy</a> 
+                                    <a href="privacy_policy.html" class="text-green-600 hover:text-green-700 font-medium underline">Privacy Policy</a> 
                                     and 
-                                    <a href="#terms" class="text-green-600 hover:text-green-700 font-medium underline">Terms of Service</a>. 
+                                    <a href="terms_of_service.html" class="text-green-600 hover:text-green-700 font-medium underline">Terms of Service</a>. 
                                     My personal information will be used solely for road infrastructure management and reporting purposes. 
                                     I understand that my report may be shared with relevant government agencies for repair and maintenance.
                                 </span>
@@ -666,7 +680,7 @@
                     <!-- Submit Button -->
                     <button type="submit" class="w-full btn-primary text-white font-bold py-4 px-8 rounded-xl text-lg border-0 flex items-center justify-center">
                         <i class="fas fa-paper-plane mr-2"></i>Submit Report
-                        <div class="ml-2 hidden" id="submitSpinner">
+                        <div class="ml-2" id="submitSpinner" style="display: none;">
                             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                         </div>
                     </button>
@@ -675,7 +689,7 @@
                 
 
                 <!-- Success Message -->
-                <div id="successMessage" class="hidden mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+                <div id="successMessage" style="display: none;" class="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
                     <div class="flex items-start">
                         <div class="flex-shrink-0">
                             <i class="fas fa-check-circle text-2xl text-green-600"></i>
@@ -716,7 +730,7 @@
                 </div>
 
                 <!-- Status Display -->
-                <div id="statusDisplay" class="hidden bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                <div id="statusDisplay" style="display: none;" class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                     <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
@@ -846,6 +860,8 @@
                         <li><a href="#report" class="text-gray-400 hover:text-green-400 transition-colors">Report Issue</a></li>
                         <li><a href="#track" class="text-gray-400 hover:text-green-400 transition-colors">Track Report</a></li>
                         <li><a href="#about" class="text-gray-400 hover:text-green-400 transition-colors">About Us</a></li>
+                        <li><a href="privacy_policy.html" class="text-gray-400 hover:text-green-400 transition-colors">Privacy Policy</a></li>
+                        <li><a href="terms_of_service.html" class="text-gray-400 hover:text-green-400 transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
                 
@@ -876,5 +892,6 @@
     </footer>
 
     <script src="frontend/citizen_portal.js"></script>
+    <!-- <script src="citizen_portal.js"></script> -->
 </body>
 </html>

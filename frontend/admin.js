@@ -17,16 +17,25 @@ function getAuthHeader() {
 // Global variables
 let allReports = [];
 let currentFilter = 'all';
-const isDemoMode = localStorage.getItem('isDemoMode') === 'true';
 
-// Mock demo data
+function isDemoModeActive() {
+    return localStorage.getItem('isDemoMode') === 'true';
+}
+
+// Mock demo data with Lagos coordinates and severity scores (0-1 scale)
 const mockReports = [
-    { id: 1, tracking_number: 'RW-001', title: 'Pothole on Lagos-Ibadan Expressway', location: 'Kilometer 45, Lagos-Ibadan Expressway', damage_type: 'pothole', severity_score: 8.5, status: 'under_review', created_at: '2025-11-13T10:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+1' },
-    { id: 2, tracking_number: 'RW-002', title: 'Road Surface Crack Near Ikorodu', location: 'Ikorodu Road Junction', damage_type: 'longitudinal_crack', severity_score: 6.2, status: 'scheduled', created_at: '2025-11-12T09:15:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+1' },
-    { id: 3, tracking_number: 'RW-003', title: 'Bridge Bearing Damage', location: 'Third Mainland Bridge', damage_type: 'alligator_crack', severity_score: 7.8, status: 'in_progress', created_at: '2025-11-11T14:45:00', image_url: 'https://via.placeholder.com/400x300?text=Bridge+1' },
-    { id: 4, tracking_number: 'RW-004', title: 'Pavement Deterioration', location: 'Lekki-Epe Expressway Km 25', damage_type: 'transverse_crack', severity_score: 5.5, status: 'completed', created_at: '2025-11-10T11:20:00', image_url: 'https://via.placeholder.com/400x300?text=Pavement+1' },
-    { id: 5, tracking_number: 'RW-005', title: 'Lane Marking Faded', location: 'VGC Access Road', damage_type: 'other_corruption', severity_score: 3.2, status: 'submitted', created_at: '2025-11-09T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Marking+1' },
-    { id: 6, tracking_number: 'RW-006', title: 'Drainage System Blockage', location: 'Shomolu District Road 5', damage_type: 'pothole', severity_score: 6.8, status: 'under_review', created_at: '2025-11-08T16:30:00', image_url: 'https://via.placeholder.com/400x300?text=Drainage+1' }
+    { id: 1, tracking_number: 'RW-001', title: 'Pothole on Lagos-Ibadan Expressway', location: '6.5347,3.3520', damage_type: 'pothole', severity_score: 0.85, status: 'under_review', created_at: '2025-11-13T10:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+1', estimated_cost: 150000 },
+    { id: 2, tracking_number: 'RW-002', title: 'Road Surface Crack Near Ikorodu', location: '6.5571,3.4987', damage_type: 'longitudinal_crack', severity_score: 0.62, status: 'scheduled', created_at: '2025-11-12T09:15:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+1', estimated_cost: 200000 },
+    { id: 3, tracking_number: 'RW-003', title: 'Bridge Bearing Damage', location: '6.4467,3.4271', damage_type: 'alligator_crack', severity_score: 0.78, status: 'completed', created_at: '2025-11-11T14:45:00', image_url: 'https://via.placeholder.com/400x300?text=Bridge+1', estimated_cost: 350000 },
+    { id: 4, tracking_number: 'RW-004', title: 'Pavement Deterioration', location: '6.4667,3.6587', damage_type: 'transverse_crack', severity_score: 0.45, status: 'under_review', created_at: '2025-11-10T11:20:00', image_url: 'https://via.placeholder.com/400x300?text=Pavement+1', estimated_cost: 120000 },
+    { id: 5, tracking_number: 'RW-005', title: 'Lane Marking Faded', location: '6.5034,3.4268', damage_type: 'other_corruption', severity_score: 0.22, status: 'submitted', created_at: '2025-11-09T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Marking+1', estimated_cost: 50000 },
+    { id: 6, tracking_number: 'RW-006', title: 'Drainage System Blockage', location: '6.5223,3.3923', damage_type: 'pothole', severity_score: 0.72, status: 'scheduled', created_at: '2025-11-08T16:30:00', image_url: 'https://via.placeholder.com/400x300?text=Drainage+1', estimated_cost: 180000 },
+    { id: 7, tracking_number: 'RW-007', title: 'Severe Pothole - Ikeja', location: '6.5776,3.3447', damage_type: 'pothole', severity_score: 0.88, status: 'submitted', created_at: '2025-11-14T07:45:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+2', estimated_cost: 175000 },
+    { id: 8, tracking_number: 'RW-008', title: 'Crack Formation - VI', location: '6.4268,3.4873', damage_type: 'alligator_crack', severity_score: 0.65, status: 'under_review', created_at: '2025-11-14T09:20:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+2', estimated_cost: 220000 },
+    { id: 9, tracking_number: 'RW-009', title: 'Minor Surface Damage - Lekki', location: '6.4578,3.5934', damage_type: 'transverse_crack', severity_score: 0.28, status: 'scheduled', created_at: '2025-11-14T11:15:00', image_url: 'https://via.placeholder.com/400x300?text=Damage+1', estimated_cost: 95000 },
+    { id: 10, tracking_number: 'RW-010', title: 'Critical Pothole - Surulere', location: '6.5012,3.3621', damage_type: 'pothole', severity_score: 0.92, status: 'in_progress', created_at: '2025-11-14T13:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+3', estimated_cost: 200000 },
+    { id: 11, tracking_number: 'RW-011', title: 'Minor Crack - Oshodi', location: '6.5577,3.4123', damage_type: 'longitudinal_crack', severity_score: 0.35, status: 'submitted', created_at: '2025-11-14T15:45:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+3', estimated_cost: 110000 },
+    { id: 12, tracking_number: 'RW-012', title: 'Road Deterioration - Epe', location: '6.5845,3.9234', damage_type: 'alligator_crack', severity_score: 0.58, status: 'completed', created_at: '2025-11-13T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Damage+2', estimated_cost: 165000 }
 ];
 
 // Toast notification system
@@ -158,10 +167,10 @@ function initDashboard() {
 
 function showSection(sectionName) {
     document.querySelectorAll('.section-content').forEach(section => {
-        section.classList.add('hidden');
+        section.style.display = 'none';
     });
 
-    document.getElementById(sectionName + 'Section').classList.remove('hidden');
+    document.getElementById(sectionName + 'Section').style.display = 'block';
 
     const titles = {
         dashboard: 'Dashboard',
@@ -244,7 +253,7 @@ async function loadDashboardData() {
     try {
         let reports = [];
         
-        if (isDemoMode) {
+        if (isDemoModeActive()) {
             reports = mockReports;
         } else {
             const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
@@ -289,7 +298,7 @@ async function loadDashboardData() {
 // Load all reports
 async function loadReports() {
     try {
-        if (isDemoMode) {
+        if (isDemoModeActive()) {
             allReports = mockReports;
         } else {
             const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
@@ -1050,7 +1059,7 @@ async function initCharts() {
     let reports = [];
     
     try {
-        if (isDemoMode) {
+        if (isDemoModeActive()) {
             reports = mockReports;
         } else {
             const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
@@ -1185,13 +1194,18 @@ let allMapMarkers = [];
 
 function initializeMap() {
     try {
+        console.log('Initializing map...');
         const initialCoords = [6.5244, 3.3792];
 
         if (mapInstance) {
             mapInstance.remove();
         }
 
+        const mapContainer = document.getElementById('reportMap');
+        console.log('Map container exists:', !!mapContainer, 'Size:', mapContainer ? mapContainer.offsetWidth + 'x' + mapContainer.offsetHeight : 'N/A');
+
         mapInstance = L.map('reportMap').setView(initialCoords, 10);
+        console.log('Map instance created:', !!mapInstance);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -1202,9 +1216,11 @@ function initializeMap() {
             chunkedLoading: true
         });
         mapInstance.addLayer(markerClusterGroup);
+        console.log('Marker cluster group added');
 
         setTimeout(() => {
             mapInstance.invalidateSize();
+            console.log('Map size invalidated');
             refreshMapMarkers();
         }, 100);
 
@@ -1230,21 +1246,22 @@ function getSeverityColorName(score) {
 }
 
 function createMarkerIcon(severity, damageType) {
-    const color = {
+    const colors = {
         'red': '#ef4444',
         'orange': '#f59e0b',
         'yellow': '#eab308',
         'green': '#22c55e',
         'gray': '#9ca3af'
-    }[severity] || '#9ca3af';
+    };
+    const color = colors[severity] || colors['gray'];
 
-    return L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-            <i class="fas fa-map-pin" style="font-size: 14px;"></i>
-        </div>`,
-        iconSize: [40, 40],
-        popupAnchor: [0, -20]
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70"><defs><filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.5"/></filter></defs><path d="M25 0 C11 0 0 11 0 25 C0 45 25 70 25 70 S50 45 50 25 C50 11 39 0 25 0 Z" fill="${color}" stroke="white" stroke-width="3" filter="url(#shadow)"/><circle cx="25" cy="25" r="8" fill="white"/></svg>`;
+    
+    return L.icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa(svgString),
+        iconSize: [50, 70],
+        iconAnchor: [25, 70],
+        popupAnchor: [0, -70]
     });
 }
 
@@ -1257,14 +1274,24 @@ async function refreshMapMarkers() {
         const statusFilter = document.getElementById('mapStatusFilter').value;
         const damageFilter = document.getElementById('mapDamageFilter').value;
 
-        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-            headers: getAuthHeader()
-        });
+        let reports;
+        
+        console.log('isDemoMode:', isDemoModeActive());
+        
+        if (isDemoModeActive()) {
+            reports = mockReports;
+            console.log('Using mock reports, count:', mockReports.length);
+        } else {
+            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+                headers: getAuthHeader()
+            });
 
-        if (!response.ok) throw new Error('Failed to fetch reports');
+            if (!response.ok) throw new Error('Failed to fetch reports');
 
-        const data = await response.json();
-        const reports = data.reports || data;
+            const data = await response.json();
+            reports = data.reports || data;
+            console.log('Fetched reports from API, count:', reports.length);
+        }
 
         const filteredReports = reports.filter(report => {
             let pass = true;
@@ -1285,7 +1312,9 @@ async function refreshMapMarkers() {
             return pass;
         });
 
-        filteredReports.forEach(report => {
+        console.log('Creating markers for', filteredReports.length, 'reports');
+        
+        filteredReports.forEach((report, index) => {
             let lat, lon;
 
             if (report.location && report.location.includes(',')) {
@@ -1299,9 +1328,23 @@ async function refreshMapMarkers() {
 
             if (!isNaN(lat) && !isNaN(lon)) {
                 const severity = getSeverityColorName(report.severity_score);
-                const icon = createMarkerIcon(severity, report.damage_type);
+                const colorMap = {
+                    'red': '#ef4444',
+                    'orange': '#f59e0b',
+                    'yellow': '#eab308',
+                    'green': '#22c55e',
+                    'gray': '#9ca3af'
+                };
+                const color = colorMap[severity] || '#9ca3af';
 
-                const marker = L.marker([lat, lon], { icon: icon });
+                const circleMarker = L.circleMarker([lat, lon], {
+                    radius: 12,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                });
 
                 const popupContent = `
                     <div class="marker-popup" style="min-width: 250px;">
@@ -1317,11 +1360,17 @@ async function refreshMapMarkers() {
                     </div>
                 `;
 
-                marker.bindPopup(popupContent);
-                markerClusterGroup.addLayer(marker);
-                allMapMarkers.push(marker);
+                circleMarker.bindPopup(popupContent);
+                markerClusterGroup.addLayer(circleMarker);
+                allMapMarkers.push(circleMarker);
+                
+                if (index === 0) {
+                    console.log('First marker added at', [lat, lon], 'with severity', severity, 'color', color);
+                }
             }
         });
+        
+        console.log('Total markers added:', allMapMarkers.length);
 
     } catch (error) {
         console.error('Error refreshing map markers:', error);

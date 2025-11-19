@@ -100,12 +100,12 @@ if (document.readyState === 'loading') {
 
 // Camera functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const cameraBtnElement = document.getElementById('cameraBtn');
-    if (cameraBtnElement) {
-        cameraBtnElement.addEventListener('click', async function() {
+    const cameraBtn = document.getElementById('cameraBtn');
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', async function() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' } // Use back camera on mobile
+                    video: { facingMode: 'environment' }
                 });
 
                 currentStream = stream;
@@ -113,10 +113,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 video.srcObject = stream;
                 video.play();
 
-                // Show camera preview and controls
-                document.getElementById('uploadOptions').classList.add('hidden');
-                document.getElementById('cameraPreview').classList.remove('hidden');
-                document.getElementById('cameraControls').classList.remove('hidden');
+                const uploadOptions = document.getElementById('uploadOptions');
+                const cameraControls = document.getElementById('cameraControls');
+                
+                if (uploadOptions) uploadOptions.style.display = 'none';
+                if (video) video.style.display = 'block';
+                if (cameraControls) cameraControls.style.display = 'block';
 
             } catch (error) {
                 console.error('Camera access denied:', error);
@@ -128,43 +130,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Capture photo from camera
 document.addEventListener('DOMContentLoaded', function() {
-    const captureBtnElement = document.getElementById('captureBtn');
-    if (captureBtnElement) {
-        captureBtnElement.addEventListener('click', function() {
+    const captureBtn = document.getElementById('captureBtn');
+    if (captureBtn) {
+        captureBtn.addEventListener('click', function() {
             const video = document.getElementById('cameraPreview');
             const canvas = document.getElementById('cameraCanvas');
             const ctx = canvas.getContext('2d');
 
-            // Set canvas dimensions to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
-            // Draw video frame to canvas
             ctx.drawImage(video, 0, 0);
 
-            // Convert to blob and create file
             canvas.toBlob(function(blob) {
                 const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-
-                // Create a new FileList-like object
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 document.getElementById('photoInput').files = dt.files;
 
-                // Show preview
                 const preview = document.getElementById('photoPreview');
-                preview.src = canvas.toDataURL();
-                preview.classList.remove('hidden');
-
-                // Hide upload options
+                const container = document.getElementById('previewContainer');
                 const uploadOptions = document.getElementById('uploadOptions');
+                
+                if (preview && container) {
+                    preview.src = canvas.toDataURL();
+                    container.style.display = 'block';
+                }
+                
                 if (uploadOptions) {
-                    uploadOptions.classList.add('hidden');
+                    uploadOptions.style.display = 'none';
                 }
 
-                // Stop camera and hide controls
                 stopCamera();
-
             }, 'image/jpeg', 0.8);
         });
     }
@@ -172,36 +168,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Retake photo
 document.addEventListener('DOMContentLoaded', function() {
-    const retakeBtnElement = document.getElementById('retakeBtn');
-    if (retakeBtnElement) {
-        retakeBtnElement.addEventListener('click', function() {
-            // Clear the current preview and canvas, reset to camera mode
+    const retakeBtn = document.getElementById('retakeBtn');
+    if (retakeBtn) {
+        retakeBtn.addEventListener('click', function() {
             const video = document.getElementById('cameraPreview');
             const canvas = document.getElementById('cameraCanvas');
-            const photoPreview = document.getElementById('photoPreview');
+            const container = document.getElementById('previewContainer');
+            const preview = document.getElementById('photoPreview');
             const uploadOptions = document.getElementById('uploadOptions');
 
-            // Clear canvas
             canvas.width = 0;
             canvas.height = 0;
 
-            // Hide photo preview
-            if (photoPreview) {
-                photoPreview.classList.add('hidden');
-                photoPreview.src = '';
+            if (container) {
+                container.style.display = 'none';
+            }
+            if (preview) {
+                preview.src = '';
             }
 
-            // Clear file input
             document.getElementById('photoInput').value = '';
 
-            // Restart video stream
             if (currentStream) {
                 video.play();
             }
 
-            // Show upload options
             if (uploadOptions) {
-                uploadOptions.classList.remove('hidden');
+                uploadOptions.style.display = 'block';
             }
         });
     }
@@ -226,16 +219,16 @@ function stopCamera() {
     const uploadOptions = document.getElementById('uploadOptions');
     const cameraPreview = document.getElementById('cameraPreview');
     const cameraControls = document.getElementById('cameraControls');
-    const photoPreview = document.getElementById('photoPreview');
+    const container = document.getElementById('previewContainer');
 
-    if (uploadOptions && !photoPreview.src) {
-        uploadOptions.classList.remove('hidden');
+    if (container && container.style.display !== 'block') {
+        if (uploadOptions) uploadOptions.style.display = 'block';
     }
     if (cameraPreview) {
-        cameraPreview.classList.add('hidden');
+        cameraPreview.style.display = 'none';
     }
     if (cameraControls) {
-        cameraControls.classList.add('hidden');
+        cameraControls.style.display = 'none';
     }
 }
 
@@ -286,12 +279,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const detectedLGA = document.getElementById('detectedLGA');
 
             button.disabled = true;
-            spinner.classList.remove('hidden');
+            spinner.style.display = 'inline-block';
 
             if (!navigator.geolocation) {
                 alert('Geolocation is not supported by this browser.\n\nPlease manually enter your location and select your LGA below.');
                 button.disabled = false;
-                spinner.classList.add('hidden');
+                spinner.style.display = 'none';
                 return;
             }
 
@@ -315,14 +308,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         detectedLGA.innerHTML = `<strong>Location Outside Lagos LGAs</strong> - Please select your LGA manually below`;
                     }
 
-                    gpsDisplay.classList.remove('hidden');
+                    gpsDisplay.style.display = 'block';
 
-                    // Update button appearance
                     button.disabled = false;
-                    spinner.classList.add('hidden');
+                    spinner.style.display = 'none';
                     button.innerHTML = 'Location Detected Successfully';
-                    button.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-700', 'hover:to-blue-800');
-                    button.classList.add('from-green-600', 'to-green-700', 'hover:from-green-700', 'hover:to-green-800');
+                    button.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
                     button.disabled = true;
                 },
                 function(error) {
@@ -340,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     alert(message);
                     button.disabled = false;
-                    spinner.classList.add('hidden');
+                    spinner.style.display = 'none';
                 },
                 {
                     enableHighAccuracy: true,
@@ -354,37 +345,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Photo preview functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const photoInputElement = document.getElementById('photoInput');
-    if (photoInputElement) {
-        photoInputElement.addEventListener('change', function(e) {
-            console.log("File change event triggered.", e.target.files);
+    const photoInput = document.getElementById('photoInput');
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                console.log("File selected:", file.name, "Size:", file.size);
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    console.log("FileReader onload triggered");
                     const preview = document.getElementById('photoPreview');
-                    console.log("Preview element:", preview);
-                    preview.src = event.target.result;
-                    console.log("Preview src set");
-                    preview.classList.remove('hidden');
-                    console.log("Hidden class removed. Current classes:", preview.className);
-                    
-                    // Hide upload options when image is selected
+                    const container = document.getElementById('previewContainer');
                     const uploadOptions = document.getElementById('uploadOptions');
-                    if (uploadOptions) {
-                        uploadOptions.classList.add('hidden');
+                    
+                    if (preview && container) {
+                        preview.src = event.target.result;
+                        container.style.display = 'block';
                     }
-                };
-                reader.onerror = function(error) {
-                    console.error("FileReader error:", error);
+                    
+                    if (uploadOptions) {
+                        uploadOptions.style.display = 'none';
+                    }
                 };
                 reader.readAsDataURL(file);
             }
         });
-    } else {
-        console.error("photoInput element not found!");
+    }
+});
+
+// Change Photo button
+document.addEventListener('DOMContentLoaded', function() {
+    const changePhotoBtn = document.getElementById('changePhotoBtn');
+    if (changePhotoBtn) {
+        changePhotoBtn.addEventListener('click', function() {
+            document.getElementById('photoInput').click();
+        });
+    }
+});
+
+// Remove Photo button
+document.addEventListener('DOMContentLoaded', function() {
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    if (removePhotoBtn) {
+        removePhotoBtn.addEventListener('click', function() {
+            const preview = document.getElementById('photoPreview');
+            const container = document.getElementById('previewContainer');
+            const uploadOptions = document.getElementById('uploadOptions');
+            const photoInput = document.getElementById('photoInput');
+            
+            if (preview) preview.src = '';
+            if (container) container.style.display = 'none';
+            if (uploadOptions) uploadOptions.style.display = 'block';
+            if (photoInput) photoInput.value = '';
+        });
     }
 });
 
@@ -396,9 +407,8 @@ async function handleReportSubmit(e) {
     const spinner = document.getElementById('submitSpinner');
     const form = this;
 
-    // Show loading state
     submitButton.disabled = true;
-    spinner.classList.remove('hidden');
+    spinner.style.display = 'inline-block';
 
     try {
         // Validate consent checkbox
@@ -485,12 +495,6 @@ async function handleReportSubmit(e) {
             trackingNumberElement.textContent = 'N/A';
         }
         const successMessage = document.getElementById('successMessage');
-
-        // Completely unhide the element by removing all hidden classes
-        successMessage.classList.remove('hidden');
-        successMessage.classList.remove('hidden-by-user');
-
-        // Set explicit inline styles to keep it visible
         successMessage.style.display = 'block';
         successMessage.style.visibility = 'visible';
         successMessage.style.opacity = '1';
@@ -560,12 +564,12 @@ async function handleReportSubmit(e) {
             closeBtn.onclick = function(e) {
                 e.preventDefault();
                 console.log('Close button clicked - hiding message');
-                successMessage.classList.add('hidden-by-user');
                 successMessage.style.display = 'none';
-                // Reset form after closing success message
                 form.reset();
-                document.getElementById('photoPreview').classList.add('hidden');
-                document.getElementById('gpsDisplay').classList.add('hidden');
+                const previewContainer = document.getElementById('previewContainer');
+                if (previewContainer) previewContainer.style.display = 'none';
+                const gpsDisplay = document.getElementById('gpsDisplay');
+                if (gpsDisplay) gpsDisplay.style.display = 'none';
 
                 // Reset location button
                 const locationBtn = document.getElementById('detectLocationBtn');
@@ -589,9 +593,8 @@ async function handleReportSubmit(e) {
         
         alert(errorMessage);
     } finally {
-        // Reset button state
         submitButton.disabled = false;
-        spinner.classList.add('hidden');
+        spinner.style.display = 'none';
     }
 }
 
@@ -665,8 +668,7 @@ async function trackReport() {
             </div>
         `;
 
-        document.getElementById('statusDisplay').classList.remove('hidden');
-        document.getElementById('statusDisplay').classList.add('animate-slide-up');
+        document.getElementById('statusDisplay').style.display = 'block';
 
     } catch (error) {
         console.error('Error tracking report:', error);
