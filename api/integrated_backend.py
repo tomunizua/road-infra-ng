@@ -105,6 +105,13 @@ if not DATABASE_URL:
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,  # Vital: Checks connection health before request
+    "pool_recycle": 300,    # Recycle connections every 5 minutes
+    "pool_size": 10,        # Keep a small pool
+    "max_overflow": 20,     # Allow temporary burst
+}
+
 # Initialize database
 db.init_app(app)
 
