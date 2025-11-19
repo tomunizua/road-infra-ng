@@ -209,10 +209,8 @@ def admin_login():
 # --- END ADMIN LOGIN ENDPOINT ---
 
 
-@app.route('/api/submit-report', methods=['POST', 'OPTIONS'])
+@app.route('/api/submit-report', methods=['POST'])
 def submit_report():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
     
     try:
         print("Report submission started...")
