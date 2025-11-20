@@ -1,5 +1,8 @@
 // --- API Configuration ---
-const RENDER_API_BASE = 'https://roadwatch-ng.onrender.com'; 
+let API_BASE_URL = 'https://roadwatch-ng.onrender.com';
+if (typeof API_CONFIG !== 'undefined') {
+    API_BASE_URL = API_CONFIG.getApiUrl();
+} 
 
 // Mobile menu toggle
 function toggleMobileMenu() {
@@ -456,8 +459,7 @@ async function handleReportSubmit(e) {
             gps_coordinates: gpsCoordinates // Include GPS coordinates if detected
         };
 
-        // --- UPDATED API CALL TO USE LIVE RENDER BASE URL ---
-        const response = await fetch(`${RENDER_API_BASE}/api/submit-report`, {
+        const response = await fetch(`${API_BASE_URL}/api/submit-report`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -616,8 +618,7 @@ async function trackReport() {
     }
 
     try {
-        // --- UPDATED API CALL TO USE LIVE RENDER BASE URL ---
-        const response = await fetch(`${RENDER_API_BASE}/api/track/${trackingNum}`);
+        const response = await fetch(`${API_BASE_URL}/api/track/${trackingNum}`);
 
         if (!response.ok) {
             alert('Report not found. Please check your tracking number.');

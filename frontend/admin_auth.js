@@ -1,14 +1,5 @@
 function handleDemoLogin() {
-    try {
-        const demoToken = 'demo_token_' + Date.now();
-        localStorage.setItem(AUTH_TOKEN_KEY, demoToken);
-        localStorage.setItem('isDemoMode', 'true');
-        console.log('Demo login triggered, token:', demoToken);
-        window.location.reload();
-    } catch (error) {
-        console.error('Error in demo login:', error);
-        alert('Failed to start demo mode. Please check browser console.');
-    }
+    showToast('Demo Mode Unavailable', 'Please use your credentials to log in. Demo data has been removed.', 'info');
 }
 
 window.handleDemoLogin = handleDemoLogin;
@@ -125,6 +116,5 @@ function validateLoginForm(username, password) {
 
 function handleLogout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem('isDemoMode');
     window.location.reload();
 }

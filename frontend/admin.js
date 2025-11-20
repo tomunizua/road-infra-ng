@@ -18,26 +18,6 @@ function getAuthHeader() {
 let allReports = [];
 let currentFilter = 'all';
 
-function isDemoModeActive() {
-    return localStorage.getItem('isDemoMode') === 'true';
-}
-
-// Mock demo data with Lagos coordinates and severity scores (0-1 scale)
-const mockReports = [
-    { id: 1, tracking_number: 'RW-001', title: 'Pothole on Lagos-Ibadan Expressway', location: '6.5347,3.3520', damage_type: 'pothole', severity_score: 0.85, status: 'under_review', created_at: '2025-11-13T10:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+1', estimated_cost: 150000 },
-    { id: 2, tracking_number: 'RW-002', title: 'Road Surface Crack Near Ikorodu', location: '6.5571,3.4987', damage_type: 'longitudinal_crack', severity_score: 0.62, status: 'scheduled', created_at: '2025-11-12T09:15:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+1', estimated_cost: 200000 },
-    { id: 3, tracking_number: 'RW-003', title: 'Bridge Bearing Damage', location: '6.4467,3.4271', damage_type: 'alligator_crack', severity_score: 0.78, status: 'completed', created_at: '2025-11-11T14:45:00', image_url: 'https://via.placeholder.com/400x300?text=Bridge+1', estimated_cost: 350000 },
-    { id: 4, tracking_number: 'RW-004', title: 'Pavement Deterioration', location: '6.4667,3.6587', damage_type: 'transverse_crack', severity_score: 0.45, status: 'under_review', created_at: '2025-11-10T11:20:00', image_url: 'https://via.placeholder.com/400x300?text=Pavement+1', estimated_cost: 120000 },
-    { id: 5, tracking_number: 'RW-005', title: 'Lane Marking Faded', location: '6.5034,3.4268', damage_type: 'other_corruption', severity_score: 0.22, status: 'submitted', created_at: '2025-11-09T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Marking+1', estimated_cost: 50000 },
-    { id: 6, tracking_number: 'RW-006', title: 'Drainage System Blockage', location: '6.5223,3.3923', damage_type: 'pothole', severity_score: 0.72, status: 'scheduled', created_at: '2025-11-08T16:30:00', image_url: 'https://via.placeholder.com/400x300?text=Drainage+1', estimated_cost: 180000 },
-    { id: 7, tracking_number: 'RW-007', title: 'Severe Pothole - Ikeja', location: '6.5776,3.3447', damage_type: 'pothole', severity_score: 0.88, status: 'submitted', created_at: '2025-11-14T07:45:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+2', estimated_cost: 175000 },
-    { id: 8, tracking_number: 'RW-008', title: 'Crack Formation - VI', location: '6.4268,3.4873', damage_type: 'alligator_crack', severity_score: 0.65, status: 'under_review', created_at: '2025-11-14T09:20:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+2', estimated_cost: 220000 },
-    { id: 9, tracking_number: 'RW-009', title: 'Minor Surface Damage - Lekki', location: '6.4578,3.5934', damage_type: 'transverse_crack', severity_score: 0.28, status: 'scheduled', created_at: '2025-11-14T11:15:00', image_url: 'https://via.placeholder.com/400x300?text=Damage+1', estimated_cost: 95000 },
-    { id: 10, tracking_number: 'RW-010', title: 'Critical Pothole - Surulere', location: '6.5012,3.3621', damage_type: 'pothole', severity_score: 0.92, status: 'in_progress', created_at: '2025-11-14T13:30:00', image_url: 'https://via.placeholder.com/400x300?text=Pothole+3', estimated_cost: 200000 },
-    { id: 11, tracking_number: 'RW-011', title: 'Minor Crack - Oshodi', location: '6.5577,3.4123', damage_type: 'longitudinal_crack', severity_score: 0.35, status: 'submitted', created_at: '2025-11-14T15:45:00', image_url: 'https://via.placeholder.com/400x300?text=Crack+3', estimated_cost: 110000 },
-    { id: 12, tracking_number: 'RW-012', title: 'Road Deterioration - Epe', location: '6.5845,3.9234', damage_type: 'alligator_crack', severity_score: 0.58, status: 'completed', created_at: '2025-11-13T08:00:00', image_url: 'https://via.placeholder.com/400x300?text=Damage+2', estimated_cost: 165000 }
-];
-
 // Toast notification system
 function showToast(title, message, type = 'success') {
     let container = document.getElementById('toastContainer');
@@ -157,6 +137,14 @@ function initDashboard() {
     document.getElementById('mapStatusFilter').addEventListener('change', refreshMapMarkers);
     document.getElementById('mapDamageFilter').addEventListener('change', refreshMapMarkers);
 
+    // LGA filter listener
+    const lgaFilterElement = document.getElementById('lgaFilter');
+    if (lgaFilterElement) {
+        lgaFilterElement.addEventListener('change', function() {
+            filterReports(currentFilter);
+        });
+    }
+
     // Load initial data (only if authenticated)
     loadDashboardData();
     loadReports();
@@ -251,24 +239,18 @@ function loadBudgetOptimization() {
 // Load dashboard statistics
 async function loadDashboardData() {
     try {
-        let reports = [];
-        
-        if (isDemoModeActive()) {
-            reports = mockReports;
-        } else {
-            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-                headers: getAuthHeader()
-            });
-            if (!response.ok) {
-                if (response.status === 401) {
-                    window.handleLogout(); 
-                    return;
-                }
-                throw new Error('Failed to fetch reports');
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.handleLogout(); 
+                return;
             }
-            const data = await response.json();
-            reports = data.reports || data;
+            throw new Error('Failed to fetch reports');
         }
+        const data = await response.json();
+        const reports = data.reports || data;
 
         const stats = {
             total: reports.length,
@@ -298,16 +280,12 @@ async function loadDashboardData() {
 // Load all reports
 async function loadReports() {
     try {
-        if (isDemoModeActive()) {
-            allReports = mockReports;
-        } else {
-            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-                headers: getAuthHeader()
-            });
-            if (!response.ok) throw new Error('Failed to fetch reports');
-            const data = await response.json();
-            allReports = data.reports || data;
-        }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
+        });
+        if (!response.ok) throw new Error('Failed to fetch reports');
+        const data = await response.json();
+        allReports = data.reports || data;
         filterReports(currentFilter);
 
     } catch (error) {
@@ -366,12 +344,21 @@ function filterReports(filter) {
     tbody.innerHTML = '';
 
     let filteredReports = allReports;
+    
     if (filter !== 'all') {
         filteredReports = allReports.filter(report => report.status === filter);
     }
 
+    const lgaFilterElement = document.getElementById('lgaFilter');
+    if (lgaFilterElement) {
+        const selectedLga = lgaFilterElement.value;
+        if (selectedLga !== 'all') {
+            filteredReports = filteredReports.filter(report => report.lga === selectedLga);
+        }
+    }
+
     if (filteredReports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No reports found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No reports found</td></tr>';
         return;
     }
 
@@ -391,6 +378,7 @@ function createReportRow(report) {
     row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.tracking_number}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.lga || 'N/A'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <div class="flex flex-col">
                 <span class="font-medium">${report.damage_type || 'Analyzing...'}</span>
@@ -1059,16 +1047,12 @@ async function initCharts() {
     let reports = [];
     
     try {
-        if (isDemoModeActive()) {
-            reports = mockReports;
-        } else {
-            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-                headers: getAuthHeader()
-            });
-            if (!response.ok) throw new Error('Failed to fetch reports');
-            const data = await response.json();
-            reports = data.reports || data;
-        }
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
+        });
+        if (!response.ok) throw new Error('Failed to fetch reports');
+        const data = await response.json();
+        reports = data.reports || data;
 
         const dateMap = {};
         const today = new Date();
@@ -1195,7 +1179,7 @@ let allMapMarkers = [];
 function initializeMap() {
     try {
         console.log('Initializing map...');
-        const initialCoords = [6.5244, 3.3792];
+        const lagosCenterCoords = [6.5244, 3.3792];
 
         if (mapInstance) {
             mapInstance.remove();
@@ -1204,7 +1188,7 @@ function initializeMap() {
         const mapContainer = document.getElementById('reportMap');
         console.log('Map container exists:', !!mapContainer, 'Size:', mapContainer ? mapContainer.offsetWidth + 'x' + mapContainer.offsetHeight : 'N/A');
 
-        mapInstance = L.map('reportMap').setView(initialCoords, 10);
+        mapInstance = L.map('reportMap').setView(lagosCenterCoords, 12);
         console.log('Map instance created:', !!mapInstance);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1213,7 +1197,9 @@ function initializeMap() {
         }).addTo(mapInstance);
 
         markerClusterGroup = L.markerClusterGroup({
-            chunkedLoading: true
+            chunkedLoading: true,
+            maxClusterRadius: 50,
+            disableClusteringAtZoom: 15
         });
         mapInstance.addLayer(markerClusterGroup);
         console.log('Marker cluster group added');
@@ -1276,22 +1262,15 @@ async function refreshMapMarkers() {
 
         let reports;
         
-        console.log('isDemoMode:', isDemoModeActive());
-        
-        if (isDemoModeActive()) {
-            reports = mockReports;
-            console.log('Using mock reports, count:', mockReports.length);
-        } else {
-            const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
-                headers: getAuthHeader()
-            });
+        const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
+            headers: getAuthHeader()
+        });
 
-            if (!response.ok) throw new Error('Failed to fetch reports');
+        if (!response.ok) throw new Error('Failed to fetch reports');
 
-            const data = await response.json();
-            reports = data.reports || data;
-            console.log('Fetched reports from API, count:', reports.length);
-        }
+        const data = await response.json();
+        reports = data.reports || data;
+        console.log('Fetched reports from API, count:', reports.length);
 
         const filteredReports = reports.filter(report => {
             let pass = true;

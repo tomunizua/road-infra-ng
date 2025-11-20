@@ -111,60 +111,78 @@
 </head>
 <body class="min-h-screen">
 
-    <div id="loginFormContainer" class="login-bg min-h-screen flex items-center justify-center">
-        <div class="max-w-md w-full p-8 md:p-10 bg-white rounded-xl card-shadow border border-gray-200">
+    <div id="loginFormContainer" class="min-h-screen flex bg-white overflow-hidden">
+        <!-- Left Side - Gradient Background -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 flex-col items-center justify-center p-12 relative overflow-hidden">
+            <!-- Decorative elements -->
+            <div class="absolute top-10 right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-20 left-10 w-56 h-56 bg-white/5 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 right-1/4 w-72 h-72 bg-green-400/10 rounded-full blur-3xl"></div>
             
-            <div class="text-center mb-12">
-                <div class="flex items-center justify-center mb-6">
-                    <img src="frontend/images/rlogo.png" alt="RoadWatch Logo" class="h-16 w-auto">
+            <!-- Icon/Illustration Area -->
+            <div class="relative z-10 text-center mb-8">
+                <div class="inline-flex items-center justify-center w-32 h-32 bg-white/15 rounded-3xl backdrop-blur-sm border border-white/20 mb-8">
+                    <i class="fas fa-shield-alt text-white text-6xl opacity-80"></i>
                 </div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-orange-600 bg-clip-text text-transparent mb-2">RoadWatch Admin</h1>
-                <p class="text-gray-600 font-medium">Infrastructure Management Portal</p>
+                <h2 class="text-3xl font-bold text-white mb-4">Admin Access</h2>
+                <p class="text-white/80 text-lg max-w-sm">Manage road damage reports and coordinate maintenance efforts across Nigeria</p>
             </div>
+        </div>
 
-            <form id="adminLoginForm" class="space-y-5">
-                
-                <div id="loginError" class="hidden p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded text-sm" role="alert">
-                    Invalid username or password.
+        <!-- Right Side - Login Form -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8">
+            <div class="w-full max-w-md">
+                <!-- Logo and Title -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-3 mb-6">
+                        <img src="frontend/images/rlogo.png" alt="RoadWatch Logo" class="h-10 w-auto">
+                        <span class="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">RoadWatch</span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h1>
+                    <p class="text-gray-600">Sign in to your admin account to manage infrastructure reports</p>
                 </div>
 
-                <div>
-                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Username or Email</label>
-                    <input type="text" id="username" name="username" required 
-                           placeholder="admin@roadwatch.ng"
-                           class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition sm:text-sm">
-                </div>
+                <!-- Login Form -->
+                <form id="adminLoginForm" method="POST" class="space-y-6">
+                    
+                    <div id="loginError" class="hidden p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm" role="alert">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Invalid username or password.
+                    </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                    <input type="password" id="password" name="password" required 
-                           placeholder="••••••••"
-                           class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition sm:text-sm">
-                </div>
+                    <!-- Username Input -->
+                    <div>
+                        <input type="text" id="username" name="username" required autocomplete="username"
+                               placeholder="Email or Username"
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition sm:text-sm">
+                    </div>
 
-                <div class="flex items-center">
-                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
-                    <label for="remember-me" class="ml-2 block text-sm text-gray-700 font-medium">Remember me</label>
-                </div>
+                    <!-- Password Input -->
+                    <div>
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
+                               placeholder="Password"
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition sm:text-sm">
+                    </div>
 
-                <div>
+                    <!-- Forgot Password Link -->
+                    <div class="flex justify-end">
+                        <a href="#" class="text-sm font-medium text-green-600 hover:text-green-700 transition">Forgot Password?</a>
+                    </div>
+
+                    <!-- Sign In Button -->
                     <button type="submit" id="loginSubmitBtn"
-                            class="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200 transform hover:scale-105">
+                            class="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-md hover:shadow-lg">
                         Sign In
                     </button>
-                </div>
+                </form>
 
-                <div class="relative flex items-center">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="px-3 text-sm text-gray-500">or</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
+                <!-- Footer Text -->
+                <div class="mt-8 pt-8 border-t border-gray-200 text-center">
+                    <p class="text-gray-600 text-sm">
+                        Need help? <a href="#" class="text-green-600 hover:text-green-700 font-medium transition">Contact Support</a>
+                    </p>
                 </div>
-
-                <button type="button" id="demoLoginBtn" onclick="handleDemoLogin()"
-                        class="w-full py-3 px-4 border-2 border-gray-300 rounded-lg text-base font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:border-green-500 transition duration-200">
-                    Demo Login
-                </button>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -332,7 +350,7 @@
 
                 <div id="reportsSection" class="section-content" style="display: none;">
                     <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
-                        <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
                             <div class="flex flex-wrap gap-2">
                                 <button class="filter-btn filter-active px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:shadow-lg transition" data-filter="all">All Reports</button>
                                 <button class="filter-btn px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition" data-filter="submitted">Submitted</button>
@@ -345,6 +363,42 @@
                                 <i class="fas fa-sync-alt mr-2"></i>Refresh
                             </button>
                         </div>
+
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">Filter by LGA:</label>
+                                <select id="lgaFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-sm">
+                                    <option value="all">All LGAs</option>
+                                    <option value="Agege">Agege</option>
+                                    <option value="Ajeromi-Ifelodun">Ajeromi-Ifelodun</option>
+                                    <option value="Alimosho">Alimosho</option>
+                                    <option value="Amuwo-Odofin">Amuwo-Odofin</option>
+                                    <option value="Apapa">Apapa</option>
+                                    <option value="Badagry">Badagry</option>
+                                    <option value="Bariga">Bariga</option>
+                                    <option value="Epe">Epe</option>
+                                    <option value="Eti-Osa">Eti-Osa</option>
+                                    <option value="Ibeju-Lekki">Ibeju-Lekki</option>
+                                    <option value="Ifako-Ijaiye">Ifako-Ijaiye</option>
+                                    <option value="Ikeja">Ikeja</option>
+                                    <option value="Ikorodu">Ikorodu</option>
+                                    <option value="Ikosi-Ketu">Ikosi-Ketu</option>
+                                    <option value="Ikoyi">Ikoyi</option>
+                                    <option value="Isolo">Isolo</option>
+                                    <option value="Kosofe">Kosofe</option>
+                                    <option value="Lagos Island">Lagos Island</option>
+                                    <option value="Lagos Mainland">Lagos Mainland</option>
+                                    <option value="Lekki">Lekki</option>
+                                    <option value="Mushin">Mushin</option>
+                                    <option value="Ojo">Ojo</option>
+                                    <option value="Oshodi-Isolo">Oshodi-Isolo</option>
+                                    <option value="Shomolu">Shomolu</option>
+                                    <option value="Somolu">Somolu</option>
+                                    <option value="Surulere">Surulere</option>
+                                    <option value="Victoria Island">Victoria Island</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
@@ -354,6 +408,7 @@
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
                                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Location</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">LGA</th>
                                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">AI Analysis</th>
                                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Severity</th>
                                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
@@ -577,7 +632,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">admin@roadwatch.ng</td>
                                         <td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Admin</span></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Jan 15, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Oct 15, 2025</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             <button class="text-blue-600 hover:text-blue-900 font-medium">Edit</button>
                                             <button class="text-red-600 hover:text-red-900 font-medium">Remove</button>
@@ -673,7 +728,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Email</p>
-                                <p class="text-lg font-medium text-gray-900" id="profileEmail">admin@roadwatch.ng</p>
+                                <p class="text-lg font-medium text-gray-900" id="profileEmail">e.g. admin@roadwatch.ng</p>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Username</p>
