@@ -7,6 +7,7 @@ import numpy as np
 import time
 import logging
 import os
+import gc
 from ultralytics import YOLO
 from huggingface_hub import hf_hub_download
 
@@ -384,6 +385,7 @@ class RoadDamagePipeline:
                 result['status'] = 'rejected'
                 result['message'] = f"Non-road surface detected (confidence: {road_result['confidence']:.1%})"
                 logger.warning(f"REJECTED: {result['message']}")
+                gc.collect() # Force memory cleanup
                 return result
             
             # Stage 2: Damage Detection
@@ -402,6 +404,7 @@ class RoadDamagePipeline:
                     'repair_urgency': 'none'
                 }
                 logger.info("NO DAMAGE: Ending pipeline")
+                gc.collect() # Force memory cleanup
                 return result
             
             # Stage 3: Severity Assessment
@@ -434,13 +437,14 @@ class RoadDamagePipeline:
             logger.info("="*80)
             logger.info(f"PIPELINE COMPLETE: Status=COMPLETED | Score={severity_result['severity_score']} | Time={result['processing_time']}")
             logger.info("="*80)
-            
+            gc.collect() # Force memory cleanup
             return result
             
         except Exception as e:
             logger.error(f"PIPELINE ERROR: {str(e)}", exc_info=True)
             result['status'] = 'error'
             result['message'] = f"Pipeline error: {str(e)}"
+            gc.collect() # Force memory cleanup
             return result
     
     def generate_recommendations(self, severity_result):
