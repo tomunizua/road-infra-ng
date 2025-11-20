@@ -7,6 +7,7 @@ Flask-JWT-Extended
 marshmallow-sqlalchemy
 Pillow
 numpy
+pandas
 pulp
 scikit-learn
 kaggle

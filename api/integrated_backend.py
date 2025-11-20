@@ -696,6 +696,22 @@ def test_endpoint():
         ]
     })
 
+# --- FORCE CORS HEADERS ON EVERY RESPONSE ---
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in [
+        "https://roadwatchnigeria.vercel.app",
+        "https://www.roadwatchnigeria.site",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500"
+    ]:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
 if __name__ == '__main__':
     with app.app_context():
         try:
