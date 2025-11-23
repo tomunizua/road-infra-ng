@@ -12,6 +12,7 @@ import io
 import gc
 import cv2
 import numpy as np
+import math
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -104,9 +105,9 @@ pipeline = None
 # --- HELPER FUNCTIONS ---
 def get_severity_level(severity_score):
     if severity_score is None: return 'none'
-    if severity_score >= 20: return 'high'     # >20% area coverage
-    if severity_score >= 5: return 'medium'    # 5-20% area coverage
-    if severity_score > 0: return 'low'        # <5% area coverage
+    if severity_score >= 70: return 'high'     
+    if severity_score >= 30: return 'medium'    
+    if severity_score > 0: return 'low'        
     return 'none'
 
 def get_repair_urgency(severity_level):
@@ -117,13 +118,23 @@ def get_repair_urgency(severity_level):
 
 def estimate_repair_cost(damage_type, severity_score, damage_count):
     if severity_score is None: severity_score = 0
-    base_costs = {'pothole': 500, 'longitudinal_crack': 200, 'lateral_crack': 300, 'mixed': 400, 'none': 0}
-    base_cost = base_costs.get(damage_type, 250)
-    # Cost increases significantly with severity (size)
-    severity_multiplier = 1 + (severity_score / 10) 
-    count_multiplier = max(1, damage_count * 0.8)
+    
+    # Realistic Base Costs (₦)
+    base_costs = {
+        'pothole': 45000,
+        'longitudinal_crack': 25000,
+        'lateral_crack': 30000,
+        'alligator_crack': 85000,
+        'mixed': 60000,
+        'none': 0
+    }
+    
+    base_cost = base_costs.get(damage_type, 35000)
+    severity_multiplier = 1 + (severity_score / 100.0) 
+    count_multiplier = max(1, 1 + (damage_count - 1) * 0.5)
+    
     total_cost = int(base_cost * severity_multiplier * count_multiplier)
-    return ((total_cost + 25) // 50) * 50
+    return ((total_cost + 250) // 500) * 500
 
 def generate_tracking_number():
     return f"RW{datetime.now().strftime('%Y%m%d')}{str(uuid.uuid4())[:8].upper()}"
@@ -143,39 +154,83 @@ def save_base64_image(base64_string, filename):
         print(f"Error saving image: {e}")
         return None
 
-# --- SEVERITY CALCULATION LOGIC (OpenCV) ---
-def calculate_severity_percentage(image_path, detections):
-    """Calculates % of image covered by damage"""
+# --- OPENCV DIMENSION ESTIMATION (From model (2).py) ---
+def estimate_dimensions_opencv(image_path, user_size_category='Not Specified'):
+    """
+    Estimates physical dimensions (L, B) in cm using contour analysis and PCA.
+    Uses user_size_category to calibrate pixel_per_cm scale.
+    """
     try:
         img = cv2.imread(image_path)
-        if img is None: return 0
+        if img is None: return 0, 0
         
-        img_height, img_width, _ = img.shape
-        total_image_area = img_height * img_width
-        if total_image_area == 0: return 0
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        total_damage_area = 0
+        # Otsu's thresholding to find dark spots (potholes)
+        _, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_OTSU)
         
-        # Detections format: list of [x1, y1, x2, y2] or dicts
-        for box in detections:
-            if isinstance(box, dict) and 'bbox' in box:
-                b = box['bbox']
-                width = b[2] - b[0]
-                height = b[3] - b[1]
-            elif isinstance(box, (list, tuple)) and len(box) >= 4:
-                width = box[2] - box[0]
-                height = box[3] - box[1]
-            else:
-                continue
-                
-            total_damage_area += (width * height)
-
-        percentage_area = (total_damage_area / total_image_area) * 100
-        return round(percentage_area, 2)
+        # Invert if the road is brighter than the pothole (typical)
+        # We want the pothole to be white (255) in the mask
+        if np.mean(thresh) > 127:
+            thresh = cv2.bitwise_not(thresh)
             
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours: return 0, 0
+        
+        # Find largest contour (assumed to be the main damage)
+        cnt = max(contours, key=cv2.contourArea)
+        
+        # Filter noise
+        img_area = img.shape[0] * img.shape[1]
+        if cv2.contourArea(cnt) < (0.001 * img_area): return 0, 0 # Too small
+        
+        # PCA for Major/Minor Axes
+        data = cnt.reshape(-1, 2).astype(np.float32)
+        mean, eigenvectors = cv2.PCACompute(data, mean=None)
+        centered = data - mean
+        proj_major = centered @ eigenvectors[0]
+        proj_minor = centered @ eigenvectors[1]
+        
+        length_px = np.max(proj_major) - np.min(proj_major)
+        breadth_px = np.max(proj_minor) - np.min(proj_minor)
+        
+        # --- USER ASSISTED CALIBRATION ---
+        # We estimate pixels_per_cm based on what the user said
+        target_size_cm = 50.0 # Default
+        
+        if user_size_category:
+            cat = user_size_category.lower()
+            if 'small' in cat: target_size_cm = 30.0
+            elif 'medium' in cat: target_size_cm = 60.0
+            elif 'large' in cat: target_size_cm = 150.0
+            
+        # Assume the longest dimension detected corresponds to the user's size category
+        pixels_per_cm = max(length_px, breadth_px) / target_size_cm
+        
+        if pixels_per_cm == 0: return 0, 0
+        
+        length_cm = length_px / pixels_per_cm
+        breadth_cm = breadth_px / pixels_per_cm
+        
+        return round(length_cm, 1), round(breadth_cm, 1)
+
     except Exception as e:
-        print(f"Error calculating severity metrics: {e}")
-        return 0
+        print(f"OpenCV Estimation Error: {e}")
+        return 0, 0
+
+def classify_severity_from_dimensions(length_cm, breadth_cm):
+    """Classify based on physical size (logic from model (2).py)"""
+    # Heuristic depth (10% of width)
+    depth_cm = min(length_cm, breadth_cm) * 0.1 
+    
+    if length_cm < 30 and breadth_cm < 20 and depth_cm < 5:
+        return 20, "low" # Score 20
+    elif length_cm < 60 and depth_cm < 10:
+        return 50, "medium" # Score 50
+    else:
+        return 85, "high" # Score 85
 
 # --- BACKGROUND AI WORKER ---
 def process_ai_background(report_id, image_path):
@@ -196,7 +251,6 @@ def process_ai_background(report_id, image_path):
             global pipeline
             if pipeline is None:
                 print("[Background] Loading AI Model...")
-                # Try multiple paths for the model file
                 possible_paths = [
                     os.path.join("/tmp", "best.pt"),
                     "best.pt",
@@ -208,6 +262,7 @@ def process_ai_background(report_id, image_path):
                 pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, TEMP_MODEL_PATH)
 
             if pipeline:
+                # 1. Run Roboflow Detection (Finds what it is)
                 result = pipeline.analyze_image(image_path)
                 
                 report = Report.query.get(report_id)
@@ -215,21 +270,32 @@ def process_ai_background(report_id, image_path):
                     if result['status'] == 'completed':
                         summary = result['summary']
                         
-                        # Extract raw detections for area calculation
-                        raw_detections = result.get('pipeline_stages', {}).get('damage_detection', {}).get('detections', [])
+                        # 2. Run OpenCV Dimension Estimation (Finds how big it is)
+                        # Uses user's "Small/Medium/Large" input to calibrate
+                        length_cm, breadth_cm = estimate_dimensions_opencv(image_path, report.user_reported_size)
                         
-                        # 1. Calculate Scientific Severity (Area Coverage)
-                        severity_percentage = calculate_severity_percentage(image_path, raw_detections)
-                        
+                        # 3. Classify Severity based on Real Dimensions
+                        if length_cm > 0:
+                            severity_score, severity_level = classify_severity_from_dimensions(length_cm, breadth_cm)
+                            print(f"📏 Dimensions: {length_cm}cm x {breadth_cm}cm -> {severity_level}")
+                        else:
+                            # Fallback if OpenCV fails (too dark/blurry)
+                            print("⚠️ OpenCV failed, using fallback severity")
+                            severity_score = 50
+                            severity_level = "medium"
+
+                        # Update Database
                         report.damage_detected = True
                         report.damage_type = summary.get('dominant_damage', 'none') or 'mixed'
+                        report.severity_score = severity_score
+                        report.severity_level = severity_level
+                        report.repair_urgency = get_repair_urgency(severity_level)
                         report.confidence = 0.95
                         
-                        # 2. Update Database with Calculated Values
-                        report.severity_score = int(severity_percentage) # 0-100 scale
-                        report.severity_level = get_severity_level(severity_percentage)
-                        report.repair_urgency = get_repair_urgency(report.severity_level)
-                        report.estimated_cost = estimate_repair_cost(report.damage_type, severity_percentage, len(raw_detections))
+                        # Cost Estimate using Real Dimensions
+                        # We pass the 'length_cm' as a proxy for severity in the cost function
+                        # or just stick to score. Let's stick to score to keep it simple.
+                        report.estimated_cost = estimate_repair_cost(report.damage_type, severity_score, 1)
                         report.status = 'under_review'
                     
                     elif result['status'] == 'rejected':
@@ -244,7 +310,7 @@ def process_ai_background(report_id, image_path):
                         report.status = 'completed'
 
                     db.session.commit()
-                    print(f"Report {report_id} updated. Severity: {report.severity_level}")
+                    print(f"✅ [Background] Report {report_id} updated.")
             
             gc.collect()
             
@@ -342,8 +408,9 @@ def get_admin_reports():
                 'id': r.id,
                 'tracking_number': r.tracking_number,
                 'location': r.location,
+                'description': r.description,
                 'damage_type': r.damage_type or 'processing',
-                'severity_score': (r.severity_score or 0) / 100.0, # Normalized for frontend
+                'severity_score': (r.severity_score or 0) / 100.0,
                 'severity_level': r.severity_level,
                 'repair_urgency': r.repair_urgency,
                 'user_reported_size': r.user_reported_size,
@@ -399,6 +466,7 @@ def track_report(tracking_number):
             'damage_type': report.damage_type,
             'severity_level': report.severity_level,
             'estimated_cost': report.estimated_cost,
+            'location': report.location,
             'created_at': report.created_at.isoformat()
         })
     except Exception as e:
@@ -415,7 +483,7 @@ def serve_upload(filename):
 def health_check():
     try:
         total = Report.query.count()
-        return jsonify({'status': 'healthy', 'total_reports': total})
+        return jsonify({'status': 'healthy', 'total_reports': total, 'pipeline_active': pipeline is not None})
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
