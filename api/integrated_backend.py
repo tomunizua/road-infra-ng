@@ -56,7 +56,6 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 
 # --- IMPORT DATABASE MODELS ---
-# We try to import from api.database (if running as package) or local database
 try:
     from api.database import db, ma, Report, ReportSchema, AdminUser
     print("Database models imported from api package")
@@ -68,7 +67,6 @@ except ImportError:
         print(f"CRITICAL: Could not import database models: {e}")
         sys.exit(1)
 
-# Initialize DB with App
 db.init_app(app)
 ma.init_app(app)
 
@@ -92,6 +90,7 @@ pipeline = None
 
 # --- HELPER FUNCTIONS ---
 def get_severity_level(severity_score):
+    if severity_score is None: return 'none'
     if severity_score >= 70: return 'high'
     if severity_score >= 30: return 'medium'
     if severity_score > 0: return 'low'
@@ -104,6 +103,7 @@ def get_repair_urgency(severity_level):
     return 'monitoring'
 
 def estimate_repair_cost(damage_type, severity_score, damage_count):
+    if severity_score is None: severity_score = 0
     base_costs = {'pothole': 500, 'longitudinal_crack': 200, 'lateral_crack': 300, 'mixed': 400, 'none': 0}
     base_cost = base_costs.get(damage_type, 250)
     severity_multiplier = 1 + (severity_score / 100) * 2
@@ -129,27 +129,42 @@ def save_base64_image(base64_string, filename):
         print(f"Error saving image: {e}")
         return None
 
-# --- BACKGROUND AI WORKER (NUCLEAR LAZY LOADING) ---
+# --- BACKGROUND AI WORKER ---
 def process_ai_background(report_id, image_path):
     with app.app_context():
         print(f"[Background] Processing Report {report_id}...")
         try:
-            # --- LAZY IMPORT HERE TO PREVENT STARTUP CRASH ---
+            # 1. ROBUST IMPORT
             print("[Background] Importing AI modules...")
-            # We assume damagepipeline.py is in the same folder or 'api' package
             try:
                 from api.damagepipeline import initialize_pipeline
             except ImportError:
-                from damagepipeline import initialize_pipeline
-            
+                try:
+                    from damagepipeline import initialize_pipeline
+                except ImportError as ie:
+                    print(f"❌ [Background] Could not find damagepipeline: {ie}")
+                    return
+
+            # 2. LAZY LOAD
             global pipeline
             if pipeline is None:
                 print("[Background] Loading AI Model into RAM...")
+                # Try finding model in multiple locations
+                possible_paths = [
+                    os.path.join("/tmp", "best.pt"),
+                    "best.pt",
+                    os.path.join(os.getcwd(), "best.pt")
+                ]
+                TEMP_MODEL_PATH = next((p for p in possible_paths if os.path.exists(p)), None)
+                
+                # If model not found, try to download it again
+                if not TEMP_MODEL_PATH:
+                     TEMP_MODEL_PATH = os.path.join("/tmp", "best.pt")
+                
                 ROAD_CLASSIFIER_PATH = "tomunizua/road-classification_filter"
-                TEMP_MODEL_PATH = os.path.join("/tmp", "best.pt")
                 pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, TEMP_MODEL_PATH)
 
-            # Run Analysis
+            # 3. RUN ANALYSIS
             if pipeline:
                 result = pipeline.analyze_image(image_path)
                 
@@ -162,10 +177,8 @@ def process_ai_background(report_id, image_path):
                         report.severity_score = int(summary.get('severity_score', 0) * 100)
                         report.confidence = 0.95
                         
-                        # Set new fields based on AI
                         report.severity_level = get_severity_level(report.severity_score)
                         report.repair_urgency = get_repair_urgency(report.severity_level)
-                        
                         report.estimated_cost = estimate_repair_cost(report.damage_type, report.severity_score, summary.get('total_damages', 0))
                         report.status = 'under_review'
                     
@@ -173,16 +186,24 @@ def process_ai_background(report_id, image_path):
                          report.status = 'rejected'
                          report.rejection_reason = "AI Check: Not a road image"
                     
+                    # If AI returns no damage, update specifically
+                    elif result['status'] == 'no_damage':
+                        report.damage_detected = False
+                        report.damage_type = 'none'
+                        report.severity_score = 0
+                        report.status = 'completed' # Or whatever status implies "checked but fine"
+
                     db.session.commit()
-                    print(f"✅ [Background] Report {report_id} updated.")
+                    print(f"✅ [Background] Report {report_id} updated successfully.")
             
-            # Cleanup Memory immediately
             gc.collect()
             
         except Exception as e:
-            print(f"❌ [Background] Error: {e}")
+            print(f"❌ [Background] CRITICAL FAILURE: {e}")
+            import traceback
+            traceback.print_exc()
 
-# --- API ROUTES ---
+# --- ROUTES ---
 
 @app.route('/api/submit-report', methods=['POST'])
 def submit_report():
@@ -200,8 +221,6 @@ def submit_report():
             image_filename = filename
 
         gps_data = data.get('gps_coordinates', {})
-        
-        # Capture size from frontend
         reported_size = data.get('size', 'Not Specified')
         
         new_report = Report(
@@ -216,13 +235,13 @@ def submit_report():
             gps_latitude=gps_data.get('latitude'),
             gps_longitude=gps_data.get('longitude'),
             gps_detected=bool(gps_data),
-            status='submitted'
+            status='submitted',
+            damage_type='processing' # Initial state
         )
         
         db.session.add(new_report)
         db.session.commit()
         
-        # Fire Background AI
         if image_filename and image_path:
             thread = threading.Thread(target=process_ai_background, args=(new_report.id, image_path))
             thread.start()
@@ -258,6 +277,63 @@ def admin_login():
         print(f"Login Error: {e}")
         return jsonify({"error": "Server error"}), 500
 
+@app.route('/api/admin/reports', methods=['GET'])
+@jwt_required()
+def get_admin_reports():
+    try:
+        reports = Report.query.order_by(Report.created_at.desc()).all()
+        reports_data = []
+        for r in reports:
+            # SAFETY CHECK: Handle missing filenames gracefully
+            photo_url = None
+            if r.image_filename:
+                photo_url = f"{BASE_URL}/api/uploads/{secure_filename(r.image_filename)}"
+            
+            reports_data.append({
+                'id': r.id,
+                'tracking_number': r.tracking_number,
+                'location': r.location,
+                'damage_type': r.damage_type or 'processing',
+                'severity_score': (r.severity_score or 0) / 100.0,
+                'severity_level': r.severity_level,
+                'repair_urgency': r.repair_urgency,
+                'user_reported_size': r.user_reported_size,
+                'status': r.status,
+                'estimated_cost': r.estimated_cost or 0,
+                'photo_url': photo_url,
+                'created_at': r.created_at.isoformat(),
+                'lga': r.lga,
+                'confidence': r.confidence or 0.0
+            })
+        return jsonify({'reports': reports_data})
+    except Exception as e:
+        print(f"Admin Report List Error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/reprocess/<int:report_id>', methods=['POST'])
+@jwt_required()
+def force_reprocess(report_id):
+    """Manually trigger AI for a stuck report"""
+    try:
+        report = Report.query.get(report_id)
+        if not report: return jsonify({'error': 'Report not found'}), 404
+        
+        if not report.image_filename:
+             return jsonify({'error': 'No image to process'}), 400
+
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], report.image_filename)
+        
+        # Run in main thread to see errors immediately (or background if you prefer)
+        # We'll run in background to be safe for Render memory
+        thread = threading.Thread(target=process_ai_background, args=(report.id, image_path))
+        thread.start()
+        
+        return jsonify({'message': f'Reprocessing triggered for {report.tracking_number}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# --- OTHER ROUTES ---
 @app.route('/api/create-admin', methods=['GET'])
 def create_initial_admin():
     try:
@@ -280,39 +356,10 @@ def track_report(tracking_number):
             'tracking_number': report.tracking_number,
             'status': report.status,
             'damage_type': report.damage_type,
-            'severity_level': report.severity_level,
-            'repair_urgency': report.repair_urgency,
             'estimated_cost': report.estimated_cost,
             'location': report.location,
             'created_at': report.created_at.isoformat() if report.created_at else None
         })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/reports', methods=['GET'])
-@jwt_required()
-def get_admin_reports():
-    try:
-        reports = Report.query.order_by(Report.created_at.desc()).all()
-        reports_data = []
-        for r in reports:
-            photo_url = f"{BASE_URL}/api/uploads/{secure_filename(r.image_filename)}" if r.image_filename else None
-            reports_data.append({
-                'id': r.id,
-                'tracking_number': r.tracking_number,
-                'location': r.location,
-                'damage_type': r.damage_type,
-                'severity_score': r.severity_score / 100.0,
-                'severity_level': r.severity_level,
-                'repair_urgency': r.repair_urgency,
-                'user_reported_size': r.user_reported_size,
-                'status': r.status,
-                'estimated_cost': r.estimated_cost,
-                'photo_url': photo_url,
-                'created_at': r.created_at.isoformat(),
-                'lga': r.lga
-            })
-        return jsonify({'reports': reports_data})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

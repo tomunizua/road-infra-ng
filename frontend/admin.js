@@ -315,7 +315,7 @@ function loadRecentReports(reports) {
 
         card.innerHTML = `
             <div class="relative h-40 bg-gray-200 overflow-hidden">
-                <img src="${report.image_url || 'https://via.placeholder.com/300x200?text=Road+Damage'}" alt="${report.location}" class="w-full h-full object-cover">
+                <img src="${report.photo_url || 'https://via.placeholder.com/300x200?text=Road+Damage'}" alt="${report.location}" class="w-full h-full object-cover">
                 <div class="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${statusColor}">
                     ${report.status.replace('_', ' ')}
                 </div>
@@ -375,6 +375,9 @@ function createReportRow(report) {
     const statusColor = getStatusColor(report.status);
     const severityColor = getSeverityColor(report.severity_score);
 
+    // Check if report is stuck in processing
+    const isStuck = report.damage_type === 'processing' || report.status === 'processing';
+
     row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.tracking_number}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
@@ -382,7 +385,7 @@ function createReportRow(report) {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <div class="flex flex-col">
                 <span class="font-medium">${report.damage_type || 'Analyzing...'}</span>
-                <span class="text-xs text-gray-500">${report.ai_confidence ? (report.ai_confidence * 100).toFixed(1) + '% confidence' : 'Pending'}</span>
+                <span class="text-xs text-gray-500">${report.confidence ? (report.confidence * 100).toFixed(1) + '%' : 'Pending'}</span>
             </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -396,13 +399,19 @@ function createReportRow(report) {
             </span>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(report.created_at).toLocaleDateString()}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button onclick="viewReport('${report.tracking_number}')" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 font-medium transition">View Details</button>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+            <button onclick="viewReport('${report.tracking_number}')" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 font-medium transition">View</button>
+            ${isStuck ? 
+                `<button onclick="forceReprocess(${report.id})" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 font-medium transition" title="Retry AI">
+                    <i class="fas fa-sync-alt"></i> Retry
+                </button>` 
+            : ''}
         </td>
     `;
 
     return row;
 }
+
 
 function getStatusColor(status) {
     const colors = {
@@ -494,7 +503,7 @@ function showReportModal(report) {
                 </div>
                 <div>
                     <h4 class="font-medium text-gray-900">AI Confidence</h4>
-                    <p class="text-gray-600">${report.ai_confidence ? (report.ai_confidence * 100).toFixed(1) + '%' : 'N/A'}</p>
+                    <p class="text-gray-600">${report.confidence ? (report.confidence * 100).toFixed(1) + '%' : 'N/A'}</p>
                 </div>
             </div>
             ` : ''}
@@ -1358,4 +1367,23 @@ async function refreshMapMarkers() {
 
 function addNewUser() {
     alert('Add new user functionality would be implemented here');
+}
+
+// ADD THIS NEW FUNCTION AT THE BOTTOM OF ADMIN.JS
+async function forceReprocess(reportId) {
+    try {
+        showToast('Processing', 'Triggering AI analysis...', 'info');
+        const response = await fetch(`${API_BASE_URL}/api/admin/reprocess/${reportId}`, {
+            method: 'POST',
+            headers: getAuthHeader()
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'AI analysis restarted in background. Refresh in 1 min.', 'success');
+        } else {
+            throw new Error('Failed to start');
+        }
+    } catch (e) {
+        showToast('Error', 'Could not reprocess report', 'error');
+    }
 }
