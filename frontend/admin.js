@@ -5,6 +5,11 @@ if (typeof API_CONFIG !== 'undefined') {
 }
 const AUTH_TOKEN_KEY = 'adminAuthToken';
 
+// Chart Global Variables (To prevent "Canvas already in use" error)
+window.reportsChartInstance = null;
+window.damageChartInstance = null;
+window.budgetChartInstance = null;
+
 // Function to get the current auth header
 function getAuthHeader() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -151,8 +156,6 @@ function initDashboard() {
     initCharts();
 }
 
-
-
 function showSection(sectionName) {
     document.querySelectorAll('.section-content').forEach(section => {
         section.style.display = 'none';
@@ -229,7 +232,7 @@ function loadBudgetOptimization() {
         console.log('Loading budget optimization data...');
         const budgetContent = document.getElementById('budgetSection');
         if (budgetContent) {
-            budgetContent.innerHTML = '<div class="p-8"><p class="text-gray-500">Budget optimization data will be loaded here.</p></div>';
+            // budgetContent.innerHTML = '<div class="p-8"><p class="text-gray-500">Budget optimization data will be loaded here.</p></div>';
         }
     } catch (error) {
         console.error('Error loading budget optimization:', error);
@@ -374,14 +377,14 @@ function createReportRow(report) {
 
     const statusColor = getStatusColor(report.status);
     const severityColor = getSeverityColor(report.severity_score);
-
-    // Check if report is stuck in processing
     const isStuck = report.damage_type === 'processing' || report.status === 'processing';
 
     row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.tracking_number}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.lga || 'N/A'}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <div>${report.location}</div>
+            <div class="text-xs text-gray-500">${report.lga || ''}</div>
+        </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <div class="flex flex-col">
                 <span class="font-medium">${report.damage_type || 'Analyzing...'}</span>
@@ -400,9 +403,9 @@ function createReportRow(report) {
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(report.created_at).toLocaleDateString()}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-            <button onclick="viewReport('${report.tracking_number}')" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 font-medium transition">View</button>
+            <button onclick="viewReport('${report.tracking_number}')" class="text-green-600 hover:text-green-900 font-medium">View</button>
             ${isStuck ? 
-                `<button onclick="forceReprocess(${report.id})" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 font-medium transition" title="Retry AI">
+                `<button onclick="forceReprocess(${report.id})" class="text-orange-600 hover:text-orange-900 font-medium" title="Retry AI">
                     <i class="fas fa-sync-alt"></i> Retry
                 </button>` 
             : ''}
@@ -411,7 +414,6 @@ function createReportRow(report) {
 
     return row;
 }
-
 
 function getStatusColor(status) {
     const colors = {
@@ -456,8 +458,6 @@ async function viewReport(trackingNumber) {
         showToast('Error', 'Failed to load report details', 'error');
     }
 }
-
-
 
 function showReportModal(report) {
     const modal = document.getElementById('reportModal');
@@ -510,7 +510,9 @@ function showReportModal(report) {
 
             <div>
                 <h4 class="font-medium text-gray-900 mb-2">Description</h4>
-                <p class="text-gray-600">${report.description}</p>
+                <p class="text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    ${report.description || 'No description provided.'}
+                </p>
             </div>
 
             ${report.gps ? `
@@ -533,7 +535,7 @@ function showReportModal(report) {
                 <img src="${report.photo_url || `${API_BASE_URL}/api/uploads/${report.image_filename}`}"
                     alt="Road damage"
                     class="w-full h-48 object-cover rounded-lg hover:shadow-lg transition"
-                    onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22system-ui%22 font-size=%2216%22 fill=%22%239ca3af%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
+                    onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-400\'><i class=\'fas fa-image-slash text-3xl mb-2\'></i><span class=\'text-sm\'>Image not found (Server Restarted)</span></div>'">
             </div>
             ` : `
             <div>
@@ -817,11 +819,11 @@ function loadBudgetChart(damageTypeCosts) {
     const ctx = document.getElementById('budgetDoughnutChart');
     if (!ctx) return;
 
-    if (window.budgetChart instanceof Chart) {
-        window.budgetChart.destroy();
+    if (window.budgetChartInstance) {
+        window.budgetChartInstance.destroy();
     }
 
-    window.budgetChart = new Chart(ctx, {
+    window.budgetChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: Object.keys(damageTypeCosts),
@@ -1124,34 +1126,40 @@ async function initCharts() {
         const data = await response.json();
         reports = data.reports || data;
 
-        const dateMap = {};
-        const today = new Date();
-
-        for (let i = 29; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            dateMap[dateStr] = 0;
-        }
-
-        reports.forEach(report => {
-            const reportDate = new Date(report.date || report.created_at || new Date());
-            const dateStr = reportDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if (dateStr in dateMap) {
-                dateMap[dateStr]++;
-            }
-        });
-
-        const labels = Object.keys(dateMap);
-        const chartData = Object.values(dateMap);
-
+        // 1. Reports Over Time Chart
         const ctx1 = document.getElementById('reportsChart');
         if (ctx1) {
+            // DESTROY EXISTING CHART IF IT EXISTS
+            if (window.reportsChartInstance) {
+                window.reportsChartInstance.destroy();
+            }
+
+            const dateMap = {};
+            const today = new Date();
+
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                dateMap[dateStr] = 0;
+            }
+
+            reports.forEach(report => {
+                const reportDate = new Date(report.date || report.created_at || new Date());
+                const dateStr = reportDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                if (dateStr in dateMap) {
+                    dateMap[dateStr]++;
+                }
+            });
+
+            const labels = Object.keys(dateMap);
+            const chartData = Object.values(dateMap);
+
             const gradient = ctx1.getContext('2d').createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(22, 163, 74, 0.3)');
             gradient.addColorStop(1, 'rgba(22, 163, 74, 0)');
 
-            new Chart(ctx1, {
+            window.reportsChartInstance = new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -1191,31 +1199,37 @@ async function initCharts() {
             });
         }
 
-        const damageTypeMap = { 
-            'Pothole': 0, 
-            'Longitudinal Crack': 0, 
-            'Transverse Crack': 0, 
-            'Alligator Crack': 0, 
-            'Other Corruption': 0 
-        };
-        reports.forEach(report => {
-            const damageType = report.damage_type || 'Unknown';
-            let mapKey = 'Other Corruption';
-            
-            if (damageType.includes('pothole')) mapKey = 'Pothole';
-            else if (damageType.includes('longitudinal')) mapKey = 'Longitudinal Crack';
-            else if (damageType.includes('transverse')) mapKey = 'Transverse Crack';
-            else if (damageType.includes('alligator')) mapKey = 'Alligator Crack';
-            else if (damageType.includes('corruption')) mapKey = 'Other Corruption';
-            
-            if (mapKey in damageTypeMap) {
-                damageTypeMap[mapKey]++;
-            }
-        });
-
+        // 2. Damage Types Chart
         const ctx2 = document.getElementById('damageTypesChart');
         if (ctx2) {
-            new Chart(ctx2, {
+            // DESTROY EXISTING CHART IF IT EXISTS
+            if (window.damageChartInstance) {
+                window.damageChartInstance.destroy();
+            }
+
+            const damageTypeMap = { 
+                'Pothole': 0, 
+                'Longitudinal Crack': 0, 
+                'Transverse Crack': 0, 
+                'Alligator Crack': 0, 
+                'Other Corruption': 0 
+            };
+            reports.forEach(report => {
+                const damageType = report.damage_type || 'Unknown';
+                let mapKey = 'Other Corruption';
+                
+                if (damageType.includes('pothole')) mapKey = 'Pothole';
+                else if (damageType.includes('longitudinal')) mapKey = 'Longitudinal Crack';
+                else if (damageType.includes('transverse')) mapKey = 'Transverse Crack';
+                else if (damageType.includes('alligator')) mapKey = 'Alligator Crack';
+                else if (damageType.includes('corruption')) mapKey = 'Other Corruption';
+                
+                if (mapKey in damageTypeMap) {
+                    damageTypeMap[mapKey]++;
+                }
+            });
+
+            window.damageChartInstance = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(damageTypeMap),
