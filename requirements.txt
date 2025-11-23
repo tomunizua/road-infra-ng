@@ -1,3 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.2+cpu
+torchvision==0.16.2+cpu
+ultralytics==8.0.200
 Flask
 Flask-Cors
 Flask-HTTPAuth
@@ -10,8 +14,6 @@ numpy
 pandas
 pulp
 scikit-learn
-kaggle
-ultralytics
 optuna
 wandb
 plotly

@@ -16,20 +16,31 @@ class Report(db.Model):
     description = db.Column(db.Text, nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     
-    # GPS and Location fields (NEW)
+    # GPS and Location fields
     state = db.Column(db.String(50), default='Lagos', nullable=False)
     lga = db.Column(db.String(100), nullable=True)
     gps_latitude = db.Column(db.Float, nullable=True)
     gps_longitude = db.Column(db.Float, nullable=True)
     gps_detected = db.Column(db.Boolean, default=False, nullable=False)
     
-    # AI prediction results
+    # AI prediction results (Core)
     damage_detected = db.Column(db.Boolean, nullable=False)
-    damage_type = db.Column(db.String(100), nullable=False)
+    damage_type = db.Column(db.String(100), nullable=False) # Dominant type
     confidence = db.Column(db.Float, nullable=False)
     severity_score = db.Column(db.Integer, nullable=False)
     estimated_cost = db.Column(db.Integer, nullable=False)
     
+    # --- NEW FIELDS FOR PIPELINE SYNC ---
+    # These align with the output from damagepipeline.py
+    severity_level = db.Column(db.String(20), nullable=True) # 'high', 'medium', 'low', 'minimal'
+    repair_urgency = db.Column(db.String(20), nullable=True) # 'immediate', 'scheduled', 'routine'
+    
+    # Store the detailed counts (e.g., {'pothole': 2, 'crack': 1})
+    # Using JSON type allows storing the dictionary directly.
+    # Note: If using SQLite locally, SQLAlchemy handles JSON serialization automatically.
+    damage_counts = db.Column(db.JSON, nullable=True) 
+    # ------------------------------------
+
     # Admin-controlled fields
     assigned_contractor = db.Column(db.String(100), nullable=True)
     rejection_reason = db.Column(db.Text, nullable=True)

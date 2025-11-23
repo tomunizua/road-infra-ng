@@ -285,32 +285,43 @@ class RoadDamagePipeline:
     
     def detect_damage(self, image_path):
         """
-        Detect damage using YOLO model
+        Detect damage using YOLO model with Low Threshold + Confidence Gating
         """
         try:
             logger.info(f"Starting YOLO damage detection on: {image_path}")
             
-            CONFIDENCE_THRESHOLD = 0.5
-            logger.debug(f"Using confidence threshold: {CONFIDENCE_THRESHOLD}")
+            # --- CONFIGURATION (TUNED FOR RECALL) ---
+            # 1. Detection Threshold: Lowered to 0.25 to catch subtle cracks/potholes
+            CONFIDENCE_THRESHOLD = 0.25  
             
+            # 2. Gatekeeper Threshold: Required "best" score to accept the image
+            # If the best detection is < 0.40, we assume the image is noise/not a road.
+            GATEKEEPER_THRESHOLD = 0.40  
+            # ----------------------------------------
+
+            logger.debug(f"Using detection threshold: {CONFIDENCE_THRESHOLD}")
+            
+            # Run YOLO with the low threshold
             results = self.yolo_model.predict(image_path, conf=CONFIDENCE_THRESHOLD, verbose=False)
-            logger.debug(f"YOLO prediction completed. Results: {len(results)} image(s)")
             
             # Parse results
             detections = []
-            img_height, img_width = 480, 640  # Default values
+            img_height, img_width = 480, 640
+            max_confidence_found = 0.0 # Track the single best score in the image
             
             if len(results) > 0:
                 img_height, img_width = results[0].orig_shape
-                logger.info(f"Image dimensions: {img_width}x{img_height}")
                 
                 if len(results[0].boxes) > 0:
-                    logger.info(f"Found {len(results[0].boxes)} detection(s)")
+                    logger.info(f"Found {len(results[0].boxes)} potential detection(s)")
                     
                     for i, box in enumerate(results[0].boxes):
                         try:
-                            damage_class = self.yolo_model.names[int(box.cls[0])]
                             confidence = float(box.conf[0])
+                            # Track the best confidence seen so far
+                            max_confidence_found = max(max_confidence_found, confidence)
+
+                            damage_class = self.yolo_model.names[int(box.cls[0])]
                             bbox = box.xyxy[0].cpu().numpy().tolist()
                             
                             detection = {
@@ -323,24 +334,50 @@ class RoadDamagePipeline:
                                 ]
                             }
                             detections.append(detection)
-                            logger.debug(f"  Detection {i+1}: {damage_class} (confidence: {confidence:.3f}, bbox: {bbox})")
                         except Exception as e:
                             logger.error(f"Error parsing detection {i}: {e}")
                             continue
                 else:
                     logger.info("No detections found (boxes empty)")
-            else:
-                logger.warning("No results returned from YOLO prediction")
             
+            # --- THE GATEKEEPER LOGIC ---
+            # Decision: Is this a valid road damage image?
+            
+            # Case A: No detections at all (even at low threshold)
+            if len(detections) == 0:
+                 return {
+                    'detections': [],
+                    'image_dimensions': [img_width, img_height],
+                    'total_detections': 0,
+                    'damage_types': [],
+                    'status': 'rejected',
+                    'message': "No road damage detected. Please ensure the image is clear."
+                }
+
+            # Case B: Detections found, but all are weak (below Gatekeeper threshold)
+            if max_confidence_found < GATEKEEPER_THRESHOLD:
+                logger.warning(f"GATEKEEPER REJECT: Best confidence {max_confidence_found:.2f} < {GATEKEEPER_THRESHOLD}")
+                return {
+                    'detections': [],
+                    'image_dimensions': [img_width, img_height],
+                    'total_detections': 0,
+                    'damage_types': [],
+                    'status': 'rejected',
+                    'message': f"Image unclear (Confidence: {max_confidence_found:.0%}). The image does not appear to contain clear road damage. Please retake a closer, sharper photo."
+                }
+
+            # Case C: Valid detections found!
             result = {
                 'detections': detections,
                 'image_dimensions': [img_width, img_height],
                 'total_detections': len(detections),
                 'damage_types': list(set([d['class'] for d in detections])),
-                'confidence_threshold': CONFIDENCE_THRESHOLD
+                'confidence_threshold': CONFIDENCE_THRESHOLD,
+                'max_confidence': max_confidence_found,
+                'status': 'valid'
             }
             
-            logger.info(f"Damage detection result: {len(detections)} detections, types: {result['damage_types']}")
+            logger.info(f"Valid damage result: {len(detections)} detections")
             return result
             
         except Exception as e:
@@ -350,7 +387,8 @@ class RoadDamagePipeline:
                 'image_dimensions': [640, 480],
                 'total_detections': 0,
                 'damage_types': [],
-                'error': str(e)
+                'error': str(e),
+                'status': 'error'
             }
     
     def calculate_severity(self, detections, img_width, img_height):
