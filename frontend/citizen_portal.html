@@ -213,6 +213,7 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
+    <!-- Enhanced Navbar -->
     <nav class="nav-blur shadow-lg sticky top-0 z-50 border-b border-white/20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
@@ -226,6 +227,7 @@
                     </div>
                 </div>
                 
+                <!-- Desktop Menu -->
                 <div class="hidden md:flex space-x-8 animate-fade-in">
                     <a href="#home" class="nav-link text-gray-700 hover:text-green-600 font-medium px-3 py-2 rounded-lg transition-all duration-300 hover:bg-green-50">Home</a>
                     <a href="#report" class="nav-link text-gray-700 hover:text-green-600 font-medium px-3 py-2 rounded-lg transition-all duration-300 hover:bg-green-50">Report Issue</a>
@@ -233,12 +235,14 @@
                     <a href="#about" class="nav-link text-gray-700 hover:text-green-600 font-medium px-3 py-2 rounded-lg transition-all duration-300 hover:bg-green-50">About</a>
                 </div>
                 
+                <!-- Mobile Menu Button -->
                 <button class="md:hidden text-gray-600 hover:text-green-600 p-2 rounded-lg transition-colors" onclick="toggleMobileMenu()">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
         
+        <!-- Mobile Menu -->
         <div id="mobileMenu" class="mobile-menu fixed top-16 right-0 h-full w-full bg-white shadow-2xl md:hidden z-40">
             <div class="p-6">
                 <div class="space-y-4">
@@ -250,20 +254,25 @@
             </div>
         </div>
         
+        <!-- Mobile Menu Overlay -->
         <div id="mobileMenuOverlay" class="mobile-menu-overlay md:hidden"></div>
     </nav>
 
+    <!-- Hero Section -->
     <section id="home" class="relative min-h-screen flex items-center hero-gradient overflow-hidden">
+        <!-- Background Image -->
         <div class="absolute inset-0 hero-image"></div>
         
+        <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'white\' fill-opacity=\'0.1\'%3E%3Cpath d=\'M20 20c0 11.046-8.954 20-20 20v20h40V20H20z\'/%3E%3C/g%3E%3C/svg%3E')"></div>
+            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="white" fill-opacity="0.1"%3E%3Cpath d="M20 20c0 11.046-8.954 20-20 20v20h40V20H20z"/%3E%3C/g%3E%3C/svg%3E')"></div>
         </div>
         
         <div class="hero-overlay absolute inset-0"></div>
         
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Hero Content -->
                 <div class="text-white animate-slide-in-left">
                     <div class="mb-6">
                         <span class="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-full mb-4 glass-effect">
@@ -277,14 +286,15 @@
                     </div>
                     
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <a href="#report" class="btn-secondary text-white font-bold py-4 px-8 rounded-xl text-lg inline-block border-0 text-center">
+                        <a href="#report" class="btn-secondary text-white font-bold py-4 px-8 rounded-xl text-lg inline-block border-0">
                             <i class="fas fa-camera mr-2"></i>Report Issue Now
                         </a>
-                        <a href="#track" class="glass-effect text-white font-bold py-4 px-8 rounded-xl text-lg inline-block hover:bg-white/20 transition-all duration-300 text-center">
+                        <a href="#track" class="glass-effect text-white font-bold py-4 px-8 rounded-xl text-lg inline-block hover:bg-white/20 transition-all duration-300">
                             <i class="fas fa-search mr-2"></i>Track Report
                         </a>
                     </div>
                     
+                    <!-- Stats -->
                     <div class="grid grid-cols-3 gap-6 mt-12">
                         <div class="text-center">
                             <div class="text-2xl md:text-3xl font-bold text-white mb-1">2,847</div>
@@ -310,17 +320,18 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
     </section>
 
+    <!-- About Section -->
     <section id="about" class="py-20 bg-gradient-to-b from-white to-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
             <div class="text-center mb-16">
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About RoadWatch Nigeria</h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">Empowering citizens to improve Nigerian infrastructure through AI-powered community reporting and data-driven decision making.</p>
             </div>
 
+            <!-- Mission Statement with Image -->
             <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-12 border border-gray-100">
                 <div class="grid md:grid-cols-2 gap-8 items-center">
                     <div>
@@ -334,6 +345,7 @@
                 </div>
             </div>
 
+            <!-- Key Goals -->
             <div>
                 <h3 class="text-3xl font-bold text-gray-900 mb-12 text-center">Our Key Goals</h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -373,6 +385,7 @@
         </div>
     </section>
 
+    <!-- How It Works Section -->
     <section class="py-20 bg-white relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -383,6 +396,7 @@
             </div>
             
             <div class="grid md:grid-cols-3 gap-8 lg:gap-12">
+                <!-- Step 1 -->
                 <div class="feature-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
                     <div class="relative mb-6">
                         <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
@@ -397,6 +411,7 @@
                     </div>
                 </div>
 
+                <!-- Step 2 -->
                 <div class="feature-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
                     <div class="relative mb-6">
                         <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -411,6 +426,7 @@
                     </div>
                 </div>
 
+                <!-- Step 3 -->
                 <div class="feature-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
                     <div class="relative mb-6">
                         <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -428,6 +444,7 @@
         </div>
     </section>
 
+    <!-- Report Issue Section -->
     <section id="report" class="py-20 section-bg">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12 animate-slide-up">
@@ -436,18 +453,20 @@
                 <p class="text-xl text-gray-600">Help improve Nigerian roads with AI-powered reporting</p>
             </div>
 
+            <!-- Lagos Info Banner -->
             <div class="mb-6 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3">
                 <div class="flex-shrink-0 text-orange-600 text-lg mt-0.5">
                     <i class="fas fa-info-circle"></i>
                 </div>
                 <div>
                     <div class="font-semibold text-orange-900">Currently Available in Lagos State</div>
-                    <p class="text-sm text-orange-800 mt-1">Reports will be automatically classified by Local Government Area (LGA) for efficient management.</p>
+                    <p class="text-sm text-orange-800 mt-1">This pilot program is currently serving Lagos State. We'll be expanding to other states soon! Reports will be automatically classified by Local Government Area (LGA) for efficient management.</p>
                 </div>
             </div>
 
             <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
                 <form id="reportForm" class="space-y-8">
+                    <!-- Photo Upload -->
                     <div class="form-floating">
                         <label class="block text-sm font-semibold text-gray-700 mb-3">
                             <i class="fas fa-camera text-green-600 mr-2"></i>Upload Photo of Road Damage
@@ -461,6 +480,8 @@
                                 <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                                     <i class="fas fa-camera text-2xl text-green-600"></i>
                                 </div>
+                                
+                                <!-- Camera and Upload Buttons -->
                                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                                     <button type="button" id="cameraBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                                         <i class="fas fa-camera mr-2"></i>Take Photo
@@ -469,33 +490,54 @@
                                         <i class="fas fa-upload mr-2"></i>Upload File
                                     </label>
                                 </div>
+                                
                                 <p class="text-sm text-gray-500">Take a photo with your camera or upload from device</p>
+                                <p class="text-xs text-gray-400">PNG, JPG up to 10MB</p>
                             </div>
                             
+                            <!-- Camera Controls (hidden initially) -->
                             <div id="cameraControls" style="display: none;" class="space-y-4">
                                 <div class="flex gap-3 justify-center">
-                                    <button type="button" id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg"><i class="fas fa-camera mr-2"></i>Capture</button>
-                                    <button type="button" id="retakeBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg"><i class="fas fa-redo mr-2"></i>Retake</button>
-                                    <button type="button" id="cancelCameraBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg"><i class="fas fa-times mr-2"></i>Cancel</button>
+                                    <button type="button" id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+                                        <i class="fas fa-camera mr-2"></i>Capture
+                                    </button>
+                                    <button type="button" id="retakeBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg">
+                                        <i class="fas fa-redo mr-2"></i>Retake
+                                    </button>
+                                    <button type="button" id="cancelCameraBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg">
+                                        <i class="fas fa-times mr-2"></i>Cancel
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Photo Preview -->
                         <div id="previewContainer" style="display: none; margin-top: 1rem;">
                             <div style="max-width: 400px; max-height: 300px; margin: 0 auto; overflow: hidden; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
                                 <img id="photoPreview" alt="Photo preview" style="display: block; width: 100%; height: 100%; object-fit: contain;">
                             </div>
+                            
+                            <!-- Change Photo Buttons -->
                             <div class="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                                <button type="button" id="changePhotoBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"><i class="fas fa-exchange-alt mr-2"></i>Change Photo</button>
-                                <button type="button" id="removePhotoBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"><i class="fas fa-trash mr-2"></i>Remove Photo</button>
+                                <button type="button" id="changePhotoBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-exchange-alt mr-2"></i>Change Photo
+                                </button>
+                                <button type="button" id="removePhotoBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-trash mr-2"></i>Remove Photo
+                                </button>
                             </div>
                         </div>
                     </div>
 
+                    <!-- GPS Detection - Primary Action -->
                     <div class="form-floating">
                         <label class="block text-sm font-semibold text-gray-700 mb-3">
                             <i class="fas fa-map text-green-600 mr-2"></i>Location Detection
                         </label>
                         <div class="bg-green-50 border-2 rounded-xl p-4 mb-4">
+                            <p class="text-sm text-green-800 mb-3">
+                                <i class="fas fa-info-circle mr-2"></i>We'll use your GPS location to determine your Local Government Area (LGA) in Lagos for accurate reporting.
+                            </p>
                             <button type="button" id="detectLocationBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
                                 <i class="fas fa-crosshairs mr-2 text-lg"></i>Detect My Location (GPS)
                                 <div id="locationSpinner" style="display: none;" class="ml-3">
@@ -503,6 +545,8 @@
                                 </div>
                             </button>
                         </div>
+                        
+                        <!-- GPS Success Display -->
                         <div id="gpsDisplay" style="display: none;" class="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
                             <div class="flex items-start gap-3">
                                 <i class="fas fa-check-circle text-green-600 text-lg mt-0.5"></i>
@@ -515,13 +559,23 @@
                         </div>
                     </div>
 
+                    <!-- Location Description -->
                     <div class="form-floating">
-                        <label for="location" class="block text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Location Description</label>
-                        <input type="text" id="location" placeholder="e.g., Ikeja Road, near Shoprite" required class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                        <label for="location" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Location Description
+                        </label>
+                        <input type="text" id="location" placeholder="e.g., Ikeja Road, near Shoprite" required
+                               class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-lightbulb text-green-600 mr-1"></i>Describe the specific road location or landmark
+                        </p>
                     </div>
 
+                    <!-- LGA Selection (Lagos Only) -->
                     <div class="form-floating">
-                        <label for="lga" class="block text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-building text-green-600 mr-2"></i>Local Government Area (LGA)</label>
+                        <label for="lga" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-building text-green-600 mr-2"></i>Local Government Area (LGA)
+                        </label>
                         <select id="lga" required class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
                             <option value="">Select LGA</option>
                             <option value="Agege">Agege</option>
@@ -545,96 +599,119 @@
                             <option value="Oshodi-Isolo">Oshodi-Isolo</option>
                             <option value="Surulere">Surulere</option>
                         </select>
-                    </div>
-
-                    <div class="form-floating">
-                        <label for="description" class="block text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-comment-alt text-green-600 mr-2"></i>Detailed Description</label>
-                        <textarea id="description" rows="4" required placeholder="Describe the road damage in detail..." class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700 resize-none"></textarea>
-                    </div>
-
-                    <div class="form-floating mb-8">
-                        <label class="block text-sm font-semibold text-gray-700 mb-4">
-                            <i class="fas fa-ruler-combined text-green-600 mr-2"></i>Approximate Size
-                            <span class="text-gray-500 font-normal ml-1">(Select the closest match)</span>
-                        </label>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="sizeSelector">
-                            <label class="cursor-pointer relative">
-                                <input type="radio" name="damageSize" value="Small" class="peer sr-only" required>
-                                <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-green-400 bg-white transition-all duration-300 peer-checked:border-green-600 peer-checked:bg-green-50 peer-checked:shadow-md h-full">
-                                    <div class="flex flex-col items-center text-center">
-                                        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3 text-xl">
-                                            <i class="fas fa-futbol"></i>
-                                        </div>
-                                        <h4 class="font-bold text-gray-900 mb-1">Small</h4>
-                                        <p class="text-xs text-gray-500">Like a Football or Dinner Plate</p>
-                                        <p class="text-xs font-mono text-gray-400 mt-1">(~30 cm)</p>
-                                    </div>
-                                    <div class="absolute top-3 right-3 text-green-600 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                        <i class="fas fa-check-circle text-xl"></i>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer relative">
-                                <input type="radio" name="damageSize" value="Medium" class="peer sr-only">
-                                <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-orange-400 bg-white transition-all duration-300 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-md h-full">
-                                    <div class="flex flex-col items-center text-center">
-                                        <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 text-xl">
-                                            <i class="fas fa-compact-disc"></i>
-                                        </div>
-                                        <h4 class="font-bold text-gray-900 mb-1">Medium</h4>
-                                        <p class="text-xs text-gray-500">Like a Car Tyre or Manhole</p>
-                                        <p class="text-xs font-mono text-gray-400 mt-1">(~60 cm)</p>
-                                    </div>
-                                    <div class="absolute top-3 right-3 text-orange-500 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                        <i class="fas fa-check-circle text-xl"></i>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer relative">
-                                <input type="radio" name="damageSize" value="Large" class="peer sr-only">
-                                <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-red-400 bg-white transition-all duration-300 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:shadow-md h-full">
-                                    <div class="flex flex-col items-center text-center">
-                                        <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-3 text-xl">
-                                            <i class="fas fa-car-side"></i>
-                                        </div>
-                                        <h4 class="font-bold text-gray-900 mb-1">Large</h4>
-                                        <p class="text-xs text-gray-500">Like a Car Hood or Bigger</p>
-                                        <p class="text-xs font-mono text-gray-400 mt-1">(>100 cm)</p>
-                                    </div>
-                                    <div class="absolute top-3 right-3 text-red-600 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                        <i class="fas fa-check-circle text-xl"></i>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-3 text-center">
-                            <i class="fas fa-info-circle text-green-600 mr-1"></i>This helps our AI measure the exact dimensions from your photo.
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-info-circle text-gray-500 mr-1"></i>Auto-detected from GPS or select manually if GPS unavailable
                         </p>
                     </div>
 
+                    <!-- Description -->
                     <div class="form-floating">
-                        <label for="phone" class="block text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-phone text-green-600 mr-2"></i>Phone Number (Optional)</label>
-                        <input type="tel" id="phone" placeholder="+234 or 0803..." class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                        <label for="description" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-comment-alt text-green-600 mr-2"></i>Detailed Description
+                        </label>
+                        <textarea id="description" rows="4" required placeholder="Describe the road damage in detail..."
+                                  class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700 resize-none"></textarea>
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-lightbulb text-green-600 mr-1"></i>Be specific about the size, depth, and any safety concerns
+                        </p>
                     </div>
 
+                    <!-- Size input -->
+                     <div class="form-floating mb-8">
+    <label class="block text-sm font-semibold text-gray-700 mb-4">
+        <i class="fas fa-ruler-combined text-green-600 mr-2"></i>Approximate Size
+        <span class="text-gray-500 font-normal ml-1">(Select the closest match)</span>
+    </label>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="sizeSelector">
+        <label class="cursor-pointer relative">
+            <input type="radio" name="damageSize" value="Small" class="peer sr-only" required>
+            <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-green-400 bg-white transition-all duration-300 peer-checked:border-green-600 peer-checked:bg-green-50 peer-checked:shadow-md h-full">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3 text-xl">
+                        <i class="fas fa-futbol"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-900 mb-1">Small</h4>
+                    <p class="text-xs text-gray-500">Like a Football or Dinner Plate</p>
+                    <p class="text-xs font-mono text-gray-400 mt-1">(~30 cm)</p>
+                </div>
+                <div class="absolute top-3 right-3 text-green-600 opacity-0 peer-checked:opacity-100 transition-opacity">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </label>
+
+        <label class="cursor-pointer relative">
+            <input type="radio" name="damageSize" value="Medium" class="peer sr-only">
+            <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-orange-400 bg-white transition-all duration-300 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-md h-full">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 text-xl">
+                        <i class="fas fa-compact-disc"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-900 mb-1">Medium</h4>
+                    <p class="text-xs text-gray-500">Like a Car Tyre or Manhole</p>
+                    <p class="text-xs font-mono text-gray-400 mt-1">(~60 cm)</p>
+                </div>
+                <div class="absolute top-3 right-3 text-orange-500 opacity-0 peer-checked:opacity-100 transition-opacity">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </label>
+
+        <label class="cursor-pointer relative">
+            <input type="radio" name="damageSize" value="Large" class="peer sr-only">
+            <div class="p-4 rounded-xl border-2 border-gray-200 hover:border-red-400 bg-white transition-all duration-300 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:shadow-md h-full">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-3 text-xl">
+                        <i class="fas fa-car-side"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-900 mb-1">Large</h4>
+                    <p class="text-xs text-gray-500">Like a Car Hood or Bigger</p>
+                    <p class="text-xs font-mono text-gray-400 mt-1">(>100 cm)</p>
+                </div>
+                <div class="absolute top-3 right-3 text-red-600 opacity-0 peer-checked:opacity-100 transition-opacity">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </label>
+    </div>
+    <p class="text-sm text-gray-500 mt-3 text-center">
+        <i class="fas fa-info-circle text-green-600 mr-1"></i>This helps our AI measure the exact dimensions from your photo.
+    </p>
+</div>
+
+                    <!-- Phone Number -->
+                    <div class="form-floating">
+                        <label for="phone" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-phone text-green-600 mr-2"></i>Phone Number (Optional)
+                        </label>
+                        <input type="tel" id="phone" 
+                               placeholder="+234 or 0803..."
+                               class="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700">
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-sms text-green-600 mr-1"></i>Get SMS updates about your report status (free)
+                        </p>
+                    </div>
+
+                    <!-- Consent and Privacy Policy -->
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <div class="flex items-start gap-3">
-                            <input type="checkbox" id="consentCheckbox" required class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500 mt-1 flex-shrink-0 cursor-pointer">
+                            <input type="checkbox" id="consentCheckbox" required 
+                                   class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500 mt-1 flex-shrink-0 cursor-pointer">
                             <label for="consentCheckbox" class="cursor-pointer flex-1">
                                 <span class="text-xs text-gray-700 leading-relaxed">
                                     By submitting this report, I consent to RoadWatch Nigeria processing my data in accordance with our 
                                     <a href="frontend/privacy_policy.html" class="text-green-600 hover:text-green-700 font-medium underline">Privacy Policy</a> 
                                     and 
                                     <a href="frontend/terms_of_service.html" class="text-green-600 hover:text-green-700 font-medium underline">Terms of Service</a>. 
-                                    My personal information will be used solely for road infrastructure management and reporting purposes.
+                                    My personal information will be used solely for road infrastructure management and reporting purposes. 
+                                    I understand that my report may be shared with relevant government agencies for repair and maintenance.
                                 </span>
                             </label>
                         </div>
                     </div>
 
+                    <!-- Submit Button -->
                     <button type="submit" class="w-full btn-primary text-white font-bold py-4 px-8 rounded-xl text-lg border-0 flex items-center justify-center">
                         <i class="fas fa-paper-plane mr-2"></i>Submit Report
                         <div class="ml-2" id="submitSpinner" style="display: none;">
@@ -643,6 +720,9 @@
                     </button>
                 </form>
 
+                
+
+                <!-- Success Message -->
                 <div id="successMessage" style="display: none;" class="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
                     <div class="flex items-start">
                         <div class="flex-shrink-0">
@@ -652,7 +732,7 @@
                             <h3 class="text-lg font-semibold text-green-800 mb-2">Report Submitted Successfully!</h3>
                             <p class="text-green-700 mb-2">Your tracking number is: <span id="trackingNumber" class="font-mono font-bold bg-white text-gray-900 px-2 py-1 rounded"></span></p>
                             <p class="text-sm text-green-600">
-                                <i class="fas fa-info-circle mr-1"></i>You'll receive SMS updates if you provided a phone number.
+                                <i class="fas fa-info-circle mr-1"></i>You'll receive SMS updates if you provided a phone number. You can also track your report below.
                             </p>
                         </div>
                     </div>
@@ -661,6 +741,7 @@
         </div>
     </section>
 
+    <!-- Track Report Section -->
     <section id="track" class="py-20 bg-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12 animate-slide-up">
@@ -670,19 +751,115 @@
             </div>
 
             <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl shadow-xl p-8 md:p-12 border border-green-100">
+                <!-- Tracking Input -->
                 <div class="flex flex-col sm:flex-row gap-4 mb-8">
                     <div class="flex-1">
-                        <input type="text" id="trackingInput" placeholder="Enter tracking number (e.g., RW-20241025-1234)" class="w-full px-6 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700 font-mono">
+                        <input type="text" id="trackingInput" 
+                               placeholder="Enter tracking number (e.g., RW-20241025-1234)"
+                               class="w-full px-6 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-700 font-mono">
                     </div>
                     <button onclick="trackReport()" class="btn-primary text-white font-bold py-4 px-8 rounded-xl border-0 whitespace-nowrap">
                         <i class="fas fa-search mr-2"></i>Track Report
                     </button>
                 </div>
-                <div id="statusDisplay" style="display: none;" class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100"></div>
+
+                <!-- Status Display -->
+                <div id="statusDisplay" style="display: none;" class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
             </div>
         </div>
     </section>
 
+    <!-- Recent Reports Section -->
+    <section class="py-20 section-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 animate-slide-up">
+                <span class="text-green-600 font-semibold text-sm uppercase tracking-wider mb-2 block">Community Impact</span>
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Recent Reports</h2>
+                <p class="text-xl text-gray-600">See how the community is making a difference</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Sample Report 1 -->
+                <div class="report-card bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
+                    <div class="flex items-start justify-between mb-4">
+                        <span class="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Severe Pothole
+                        </span>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">2h ago</span>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-gray-800 font-medium mb-2">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Lekki Phase 1, Lagos
+                        </p>
+                        <p class="text-sm text-gray-600 leading-relaxed">Large pothole on Admiralty Way causing traffic delays and potential vehicle damage...</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-clock mr-1"></i>Under Review
+                        </span>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-gray-700">Severity: 8/10</div>
+                            <div class="text-xs text-gray-500">AI Analysis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sample Report 2 -->
+                <div class="report-card bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                    <div class="flex items-start justify-between mb-4">
+                        <span class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                            <i class="fas fa-road mr-1"></i>Road Crack
+                        </span>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">5h ago</span>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-gray-800 font-medium mb-2">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Victoria Island, Lagos
+                        </p>
+                        <p class="text-sm text-gray-600 leading-relaxed">Multiple longitudinal cracks developing on Adeola Odeku Street, needs repair...</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-calendar-check mr-1"></i>Scheduled
+                        </span>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-gray-700">Severity: 6/10</div>
+                            <div class="text-xs text-gray-500">Preventive Action</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sample Report 3 -->
+                <div class="report-card bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                    <div class="flex items-start justify-between mb-4">
+                        <span class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                            <i class="fas fa-road mr-1"></i>Road Crack
+                        </span>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">1d ago</span>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-gray-800 font-medium mb-2">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Ikeja GRA, Lagos
+                        </p>
+                        <p class="text-sm text-gray-600 leading-relaxed">Multiple cracks developing on Allen Avenue, requires preventive maintenance...</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>Completed
+                        </span>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-gray-700">Fixed: ₦1.2M</div>
+                            <div class="text-xs text-gray-500">Budget Used</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="bg-gray-900 text-white py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid md:grid-cols-4 gap-8">
@@ -697,27 +874,55 @@
                         </div>
                     </div>
                     <p class="text-gray-400 mb-6 leading-relaxed">AI-powered infrastructure management platform designed to improve Nigerian roads through community participation and government collaboration.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
                 </div>
+                
                 <div>
                     <h3 class="font-bold text-lg mb-6">Quick Links</h3>
                     <ul class="space-y-3">
                         <li><a href="#home" class="text-gray-400 hover:text-green-400 transition-colors">Home</a></li>
                         <li><a href="#report" class="text-gray-400 hover:text-green-400 transition-colors">Report Issue</a></li>
                         <li><a href="#track" class="text-gray-400 hover:text-green-400 transition-colors">Track Report</a></li>
+                        <li><a href="#about" class="text-gray-400 hover:text-green-400 transition-colors">About Us</a></li>
+                        <!-- <li><a href="privacy_policy.html" class="text-gray-400 hover:text-green-400 transition-colors">Privacy Policy</a></li>
+                        <li><a href="terms_of_service.html" class="text-gray-400 hover:text-green-400 transition-colors">Terms of Service</a></li> -->
                         <li><a href="./privacy_policy.html" class="text-gray-400 hover:text-green-400 transition-colors">Privacy Policy</a></li>
                         <li><a href="./terms_of_service.html" class="text-gray-400 hover:text-green-400 transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
+                
                 <div>
                     <h3 class="font-bold text-lg mb-6">Contact Info</h3>
                     <div class="space-y-3">
-                        <div class="flex items-center text-gray-400"><i class="fas fa-envelope mr-3 text-green-500"></i><span>info@roadwatch.ng</span></div>
-                        <div class="flex items-center text-gray-400"><i class="fas fa-map-marker-alt mr-3 text-green-500"></i><span>Lagos, Nigeria</span></div>
+                        <div class="flex items-center text-gray-400">
+                            <i class="fas fa-envelope mr-3 text-green-500"></i>
+                            <span>info@roadwatch.ng</span>
+                        </div>
+                        <div class="flex items-center text-gray-400">
+                            <i class="fas fa-phone mr-3 text-green-500"></i>
+                            <span>+234 800 ROADWATCH</span>
+                        </div>
+                        <div class="flex items-center text-gray-400">
+                            <i class="fas fa-map-marker-alt mr-3 text-green-500"></i>
+                            <span>Lagos, Nigeria</span>
+                        </div>
                     </div>
                 </div>
             </div>
+            
             <div class="border-t border-gray-800 mt-12 pt-8 text-center">
                 <p class="text-gray-400 text-sm mb-2">© 2024 RoadWatch Nigeria. Built for ALU Software Engineering Capstone.</p>
+                <p class="text-gray-500 text-sm">Powered by AI • Serving Nigerian Communities • Making Infrastructure Better</p>
             </div>
         </div>
     </footer>
