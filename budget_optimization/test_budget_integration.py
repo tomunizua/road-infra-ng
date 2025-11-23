@@ -14,12 +14,12 @@ BUDGET_DIR = os.path.dirname(os.path.abspath(__file__))
 if BUDGET_DIR not in sys.path:
     sys.path.insert(0, BUDGET_DIR)
 
-from enhanced_budget import (
+from api.enhanced_budget import (
     EnhancedRepairFinancials,
     BudgetConfig,
     BudgetOptimizationError
 )
-from data_converter import (
+from api.data_converter import (
     database_report_to_budget_format,
     batch_convert_reports,
     get_conversion_stats

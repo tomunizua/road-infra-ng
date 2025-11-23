@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager, jwt_required
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 import os
 import uuid
 import sys
@@ -8,6 +10,8 @@ import threading
 import base64
 import io
 import gc
+import cv2
+import numpy as np
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -57,12 +61,12 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 
 # --- IMPORT DATABASE MODELS ---
 try:
-    from api.database import db, ma, Report, ReportSchema, AdminUser
-    print("Database models imported from api package")
+    from database import db, ma, Report, ReportSchema, AdminUser
+    print("Database models imported locally")
 except ImportError:
     try:
-        from database import db, ma, Report, ReportSchema, AdminUser
-        print("Database models imported locally")
+        from api.database import db, ma, Report, ReportSchema, AdminUser
+        print("Database models imported from api package")
     except ImportError as e:
         print(f"CRITICAL: Could not import database models: {e}")
         sys.exit(1)
@@ -85,15 +89,24 @@ with app.app_context():
     except Exception as e:
         print(f"Database warning: {e}")
 
+# --- IMPORT BUDGET API (Same Folder) ---
+try:
+    from budget_api import create_budget_app
+    if create_budget_app:
+        create_budget_app(app)
+        print("Budget API registered")
+except ImportError as e:
+    print(f"Budget API skipped: {e}")
+
 # --- GLOBAL PIPELINE VAR ---
 pipeline = None 
 
 # --- HELPER FUNCTIONS ---
 def get_severity_level(severity_score):
     if severity_score is None: return 'none'
-    if severity_score >= 70: return 'high'
-    if severity_score >= 30: return 'medium'
-    if severity_score > 0: return 'low'
+    if severity_score >= 20: return 'high'     # >20% area coverage
+    if severity_score >= 5: return 'medium'    # 5-20% area coverage
+    if severity_score > 0: return 'low'        # <5% area coverage
     return 'none'
 
 def get_repair_urgency(severity_level):
@@ -106,7 +119,8 @@ def estimate_repair_cost(damage_type, severity_score, damage_count):
     if severity_score is None: severity_score = 0
     base_costs = {'pothole': 500, 'longitudinal_crack': 200, 'lateral_crack': 300, 'mixed': 400, 'none': 0}
     base_cost = base_costs.get(damage_type, 250)
-    severity_multiplier = 1 + (severity_score / 100) * 2
+    # Cost increases significantly with severity (size)
+    severity_multiplier = 1 + (severity_score / 10) 
     count_multiplier = max(1, damage_count * 0.8)
     total_cost = int(base_cost * severity_multiplier * count_multiplier)
     return ((total_cost + 25) // 50) * 50
@@ -129,42 +143,70 @@ def save_base64_image(base64_string, filename):
         print(f"Error saving image: {e}")
         return None
 
+# --- SEVERITY CALCULATION LOGIC (OpenCV) ---
+def calculate_severity_percentage(image_path, detections):
+    """Calculates % of image covered by damage"""
+    try:
+        img = cv2.imread(image_path)
+        if img is None: return 0
+        
+        img_height, img_width, _ = img.shape
+        total_image_area = img_height * img_width
+        if total_image_area == 0: return 0
+        
+        total_damage_area = 0
+        
+        # Detections format: list of [x1, y1, x2, y2] or dicts
+        for box in detections:
+            if isinstance(box, dict) and 'bbox' in box:
+                b = box['bbox']
+                width = b[2] - b[0]
+                height = b[3] - b[1]
+            elif isinstance(box, (list, tuple)) and len(box) >= 4:
+                width = box[2] - box[0]
+                height = box[3] - box[1]
+            else:
+                continue
+                
+            total_damage_area += (width * height)
+
+        percentage_area = (total_damage_area / total_image_area) * 100
+        return round(percentage_area, 2)
+            
+    except Exception as e:
+        print(f"Error calculating severity metrics: {e}")
+        return 0
+
 # --- BACKGROUND AI WORKER ---
 def process_ai_background(report_id, image_path):
     with app.app_context():
         print(f"[Background] Processing Report {report_id}...")
         try:
-            # 1. ROBUST IMPORT
+            # Lazy import to prevent startup timeout
             print("[Background] Importing AI modules...")
             try:
                 from api.damagepipeline import initialize_pipeline
             except ImportError:
                 try:
                     from damagepipeline import initialize_pipeline
-                except ImportError as ie:
-                    print(f"❌ [Background] Could not find damagepipeline: {ie}")
+                except ImportError:
+                    print("Could not find pipeline module")
                     return
-
-            # 2. LAZY LOAD
+            
             global pipeline
             if pipeline is None:
-                print("[Background] Loading AI Model into RAM...")
-                # Try finding model in multiple locations
+                print("[Background] Loading AI Model...")
+                # Try multiple paths for the model file
                 possible_paths = [
                     os.path.join("/tmp", "best.pt"),
                     "best.pt",
                     os.path.join(os.getcwd(), "best.pt")
                 ]
-                TEMP_MODEL_PATH = next((p for p in possible_paths if os.path.exists(p)), None)
-                
-                # If model not found, try to download it again
-                if not TEMP_MODEL_PATH:
-                     TEMP_MODEL_PATH = os.path.join("/tmp", "best.pt")
+                TEMP_MODEL_PATH = next((p for p in possible_paths if os.path.exists(p)), os.path.join("/tmp", "best.pt"))
                 
                 ROAD_CLASSIFIER_PATH = "tomunizua/road-classification_filter"
                 pipeline = initialize_pipeline(ROAD_CLASSIFIER_PATH, TEMP_MODEL_PATH)
 
-            # 3. RUN ANALYSIS
             if pipeline:
                 result = pipeline.analyze_image(image_path)
                 
@@ -172,34 +214,42 @@ def process_ai_background(report_id, image_path):
                 if report:
                     if result['status'] == 'completed':
                         summary = result['summary']
-                        report.damage_detected = summary.get('total_damages', 0) > 0
+                        
+                        # Extract raw detections for area calculation
+                        raw_detections = result.get('pipeline_stages', {}).get('damage_detection', {}).get('detections', [])
+                        
+                        # 1. Calculate Scientific Severity (Area Coverage)
+                        severity_percentage = calculate_severity_percentage(image_path, raw_detections)
+                        
+                        report.damage_detected = True
                         report.damage_type = summary.get('dominant_damage', 'none') or 'mixed'
-                        report.severity_score = int(summary.get('severity_score', 0) * 100)
                         report.confidence = 0.95
                         
-                        report.severity_level = get_severity_level(report.severity_score)
+                        # 2. Update Database with Calculated Values
+                        report.severity_score = int(severity_percentage) # 0-100 scale
+                        report.severity_level = get_severity_level(severity_percentage)
                         report.repair_urgency = get_repair_urgency(report.severity_level)
-                        report.estimated_cost = estimate_repair_cost(report.damage_type, report.severity_score, summary.get('total_damages', 0))
+                        report.estimated_cost = estimate_repair_cost(report.damage_type, severity_percentage, len(raw_detections))
                         report.status = 'under_review'
                     
                     elif result['status'] == 'rejected':
                          report.status = 'rejected'
                          report.rejection_reason = "AI Check: Not a road image"
                     
-                    # If AI returns no damage, update specifically
                     elif result['status'] == 'no_damage':
                         report.damage_detected = False
                         report.damage_type = 'none'
                         report.severity_score = 0
-                        report.status = 'completed' # Or whatever status implies "checked but fine"
+                        report.severity_level = 'none'
+                        report.status = 'completed'
 
                     db.session.commit()
-                    print(f"✅ [Background] Report {report_id} updated successfully.")
+                    print(f"Report {report_id} updated. Severity: {report.severity_level}")
             
             gc.collect()
             
         except Exception as e:
-            print(f"❌ [Background] CRITICAL FAILURE: {e}")
+            print(f"Background Error: {e}")
             import traceback
             traceback.print_exc()
 
@@ -236,7 +286,7 @@ def submit_report():
             gps_longitude=gps_data.get('longitude'),
             gps_detected=bool(gps_data),
             status='submitted',
-            damage_type='processing' # Initial state
+            damage_type='processing'
         )
         
         db.session.add(new_report)
@@ -284,7 +334,6 @@ def get_admin_reports():
         reports = Report.query.order_by(Report.created_at.desc()).all()
         reports_data = []
         for r in reports:
-            # SAFETY CHECK: Handle missing filenames gracefully
             photo_url = None
             if r.image_filename:
                 photo_url = f"{BASE_URL}/api/uploads/{secure_filename(r.image_filename)}"
@@ -294,7 +343,7 @@ def get_admin_reports():
                 'tracking_number': r.tracking_number,
                 'location': r.location,
                 'damage_type': r.damage_type or 'processing',
-                'severity_score': (r.severity_score or 0) / 100.0,
+                'severity_score': (r.severity_score or 0) / 100.0, # Normalized for frontend
                 'severity_level': r.severity_level,
                 'repair_urgency': r.repair_urgency,
                 'user_reported_size': r.user_reported_size,
@@ -308,24 +357,17 @@ def get_admin_reports():
         return jsonify({'reports': reports_data})
     except Exception as e:
         print(f"Admin Report List Error: {e}")
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/reprocess/<int:report_id>', methods=['POST'])
 @jwt_required()
 def force_reprocess(report_id):
-    """Manually trigger AI for a stuck report"""
     try:
         report = Report.query.get(report_id)
         if not report: return jsonify({'error': 'Report not found'}), 404
-        
-        if not report.image_filename:
-             return jsonify({'error': 'No image to process'}), 400
+        if not report.image_filename: return jsonify({'error': 'No image'}), 400
 
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], report.image_filename)
-        
-        # Run in main thread to see errors immediately (or background if you prefer)
-        # We'll run in background to be safe for Render memory
         thread = threading.Thread(target=process_ai_background, args=(report.id, image_path))
         thread.start()
         
@@ -333,7 +375,6 @@ def force_reprocess(report_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# --- OTHER ROUTES ---
 @app.route('/api/create-admin', methods=['GET'])
 def create_initial_admin():
     try:
@@ -356,9 +397,9 @@ def track_report(tracking_number):
             'tracking_number': report.tracking_number,
             'status': report.status,
             'damage_type': report.damage_type,
+            'severity_level': report.severity_level,
             'estimated_cost': report.estimated_cost,
-            'location': report.location,
-            'created_at': report.created_at.isoformat() if report.created_at else None
+            'created_at': report.created_at.isoformat()
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -374,7 +415,7 @@ def serve_upload(filename):
 def health_check():
     try:
         total = Report.query.count()
-        return jsonify({'status': 'healthy', 'total_reports': total, 'pipeline_active': pipeline is not None})
+        return jsonify({'status': 'healthy', 'total_reports': total})
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 

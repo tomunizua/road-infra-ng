@@ -9,6 +9,7 @@ import logging
 import os
 import gc
 from ultralytics import YOLO
+from ultralytics.nn.tasks import DetectionModel
 from huggingface_hub import hf_hub_download
 
 # Configure logging for debugging
@@ -223,6 +224,15 @@ class RoadDamagePipeline:
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
+        try:
+            torch.serialization.add_safe_globals([DetectionModel])
+            print("Allowed YOLO DetectionModel safe global for PyTorch 2.6+")
+        except AttributeError:
+            # Older PyTorch versions don't need this
+            pass
+        except Exception as e:
+            print(f"Warning setting safe globals: {e}")
+
         # Initialize components
         self.road_classifier = self.load_road_classifier(road_classifier_path)
         # YOLO model is loaded from the path provided after download

@@ -899,6 +899,8 @@ function loadPriorityQueue(reports, budget = 5000000) {
     document.getElementById('affordableCount').textContent = affordableCount;
 }
 
+
+// Updated Budget Optimization Function
 async function optimizeBudget() {
     try {
         let budgetInput = parseFloat(document.getElementById('budgetInput')?.value) || 5000000;
@@ -908,49 +910,43 @@ async function optimizeBudget() {
             return;
         }
 
+        // 1. Get Reports from DB
         const response = await fetch(`${API_BASE_URL}/api/admin/reports`, {
             headers: getAuthHeader()
         });
 
         if (!response.ok) throw new Error('Failed to fetch reports');
-
         const data = await response.json();
         const reports = data.reports || data;
 
-        let totalCost = 0;
-        const damageTypeCosts = {};
-
-        reports.forEach(report => {
-            const cost = report.estimated_cost || 0;
-            totalCost += cost;
-
-            const damageType = report.damage_type || 'Unknown';
-            if (!damageTypeCosts[damageType]) {
-                damageTypeCosts[damageType] = 0;
-            }
-            damageTypeCosts[damageType] += cost;
+        // 2. Send to AI Budget API
+        showToast('Optimizing', 'Calculating AI allocation...', 'info');
+        
+        const optResponse = await fetch(`${API_BASE_URL}/api/budget/optimize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeader()
+            },
+            body: JSON.stringify({
+                repairs: reports,
+                total_budget: budgetInput,
+                strategy: 'priority_weighted'
+            })
         });
 
-        const remaining = budgetInput - totalCost;
+        if (!optResponse.ok) throw new Error('Optimization failed');
+        const result = await optResponse.json();
+        const allocations = result.allocations;
 
-        if (document.getElementById('estimatedRepairCost')) {
-            document.getElementById('estimatedRepairCost').textContent = '₦' + totalCost.toLocaleString();
-        }
-        if (document.getElementById('budgetRemaining')) {
-            document.getElementById('budgetRemaining').textContent = '₦' + Math.max(0, remaining).toLocaleString();
-        }
+        // 3. Update UI
         if (document.getElementById('currentBudgetCard')) {
             document.getElementById('currentBudgetCard').textContent = '₦' + budgetInput.toLocaleString();
         }
-
-        loadPriorityQueue(reports, budgetInput);
-
-        const reportsAffordable = reports.filter(r => {
-            const cost = r.estimated_cost || 0;
-            return cost <= budgetInput;
-        }).length;
-
-        showToast('Budget Optimized', `Can repair ${reportsAffordable} reports with ₦${budgetInput.toLocaleString()} budget`, 'success');
+        
+        // 4. Render Priority Queue using API Data
+        renderOptimizedQueue(reports, allocations);
+        showToast('Success', 'Budget optimized successfully', 'success');
 
     } catch (error) {
         console.error('Error optimizing budget:', error);
@@ -958,6 +954,71 @@ async function optimizeBudget() {
     }
 }
 
+function renderOptimizedQueue(reports, allocations) {
+    const tbody = document.getElementById('priorityQueueBody');
+    tbody.innerHTML = '';
+
+    // Sort by Funding Status (Funded First) -> Priority Score
+    const sortedReports = [...reports].sort((a, b) => {
+        const allocA = allocations[a.tracking_number];
+        const allocB = allocations[b.tracking_number];
+        
+        if (!allocA) return 1;
+        if (!allocB) return -1;
+
+        // Prioritize funded items
+        if (allocA.Can_Complete !== allocB.Can_Complete) {
+            return allocA.Can_Complete ? -1 : 1;
+        }
+        // Tie-breaker: Priority Score
+        return (allocB.Priority_Score || 0) - (allocA.Priority_Score || 0);
+    });
+
+    let affordableCount = 0;
+
+    sortedReports.slice(0, 20).forEach((report, index) => {
+        const alloc = allocations[report.tracking_number];
+        if (!alloc) return;
+
+        const canAfford = alloc.Can_Complete;
+        if (canAfford) affordableCount++;
+
+        const row = document.createElement('tr');
+        row.className = canAfford ? 'bg-green-50' : 'bg-red-50';
+
+        const severityColor = getSeverityColor(report.severity_score);
+
+        row.innerHTML = `
+            <td class="px-4 py-4 whitespace-nowrap">
+                <input type="checkbox" class="report-checkbox rounded cursor-pointer">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                      style="background-color: ${canAfford ? '#dcfce7' : '#fee2f2'}; color: ${canAfford ? '#166534' : '#991b1b'};">
+                    ${canAfford ? 'FUNDED' : 'DEFERRED'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.tracking_number}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.location}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-xs font-medium rounded-full text-white ${severityColor}">
+                    ${report.severity_score ? Math.round(report.severity_score * 100) : 'TBD'}
+                </span>
+                <div class="text-xs text-gray-500 mt-1">Score: ${alloc.Priority_Score.toFixed(2)}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div>Est: ₦${(alloc['Estimated Cost (₦)']).toLocaleString()}</div>
+                <div class="text-xs text-gray-500">Alloc: ₦${(alloc['Allocated Budget (₦)']).toLocaleString()}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="viewReport('${report.tracking_number}')" class="text-green-600 hover:text-green-900">View</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('affordableCount').textContent = affordableCount;
+}
 
 // Bulk select checkboxes
 function toggleSelectAll(checkbox) {

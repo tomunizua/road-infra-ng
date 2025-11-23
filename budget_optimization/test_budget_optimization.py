@@ -7,7 +7,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from enhanced_budget import (
+from api.enhanced_budget import (
     EnhancedRepairFinancials,
     BudgetConfig,
     BudgetOptimizationError,
