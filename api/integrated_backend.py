@@ -338,7 +338,7 @@ def submit_report():
 
         gps_data = data.get('gps_coordinates', {})
         reported_size = data.get('size', 'Not Specified')
-        
+
         new_report = Report(
             tracking_number=tracking_number,
             image_filename=image_filename or '',
@@ -348,8 +348,8 @@ def submit_report():
             user_reported_size=reported_size,
             state=data.get('state', 'Lagos'),
             lga=data.get('lga'),
-            gps_latitude=gps_data.get('latitude'),
-            gps_longitude=gps_data.get('longitude'),
+            gps_latitude=gps_data.get('lat'),
+            gps_longitude=gps_data.get('lng'),
             gps_detected=bool(gps_data),
             status='submitted',
             damage_type='processing'

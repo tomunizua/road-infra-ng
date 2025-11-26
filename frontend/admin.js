@@ -1380,13 +1380,13 @@ async function refreshMapMarkers() {
         filteredReports.forEach((report, index) => {
             let lat, lon;
 
-            if (report.location && report.location.includes(',')) {
-                const coords = report.location.split(',');
-                lat = parseFloat(coords[0].trim());
-                lon = parseFloat(coords[1].trim());
+            // Use GPS coordinates from database if available
+            if (report.gps_latitude && report.gps_longitude) {
+                lat = parseFloat(report.gps_latitude);
+                lon = parseFloat(report.gps_longitude);
             } else {
-                lat = 6.5 + (Math.random() - 0.5) * 0.5;
-                lon = 3.3 + (Math.random() - 0.5) * 0.5;
+                // Skip reports without GPS coordinates
+                return;
             }
 
             if (!isNaN(lat) && !isNaN(lon)) {
