@@ -29,7 +29,6 @@ class Report(db.Model):
     gps_latitude = db.Column(db.Float, nullable=True)
     gps_longitude = db.Column(db.Float, nullable=True)
     gps_detected = db.Column(db.Boolean, default=False, nullable=False)
-    geocoded_address = db.Column(db.String(500), nullable=True)
     
     # AI Results
     damage_detected = db.Column(db.Boolean, nullable=False, default=False)

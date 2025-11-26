@@ -1376,19 +1376,17 @@ async function refreshMapMarkers() {
         });
 
         console.log('Creating markers for', filteredReports.length, 'reports');
-
+        
         filteredReports.forEach((report, index) => {
             let lat, lon;
 
-            // Use GPS coordinates from the report if available
-            if (report.gps_latitude && report.gps_longitude) {
-                lat = parseFloat(report.gps_latitude);
-                lon = parseFloat(report.gps_longitude);
-                console.log(`Report ${report.tracking_number} has GPS: ${lat}, ${lon}`);
+            if (report.location && report.location.includes(',')) {
+                const coords = report.location.split(',');
+                lat = parseFloat(coords[0].trim());
+                lon = parseFloat(coords[1].trim());
             } else {
-                // Skip reports without GPS coordinates
-                console.log(`Report ${report.tracking_number} has no GPS coordinates, skipping`);
-                return;
+                lat = 6.5 + (Math.random() - 0.5) * 0.5;
+                lon = 3.3 + (Math.random() - 0.5) * 0.5;
             }
 
             if (!isNaN(lat) && !isNaN(lon)) {
@@ -1413,10 +1411,8 @@ async function refreshMapMarkers() {
 
                 const popupContent = `
                     <div class="marker-popup" style="min-width: 250px;">
-                        <h4 style="font-weight: bold; margin-bottom: 8px;">${report.tracking_number}</h4>
+                        <h4>${report.tracking_number}</h4>
                         <p><strong>Location:</strong> ${report.location}</p>
-                        ${report.geocoded_address ? `<p style="font-size: 12px; color: #6b7280;"><strong>Address:</strong> ${report.geocoded_address}</p>` : ''}
-                        <p style="font-size: 11px; color: #9ca3af;"><strong>GPS:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
                         <p><strong>Status:</strong> <span style="color: #6b7280;">${report.status.replace('_', ' ')}</span></p>
                         <p><strong>Damage Type:</strong> ${report.damage_type || 'Unknown'}</p>
                         <p><strong>Severity:</strong> ${report.severity_score ? Math.round(report.severity_score * 100) + '/100' : 'TBD'}</p>

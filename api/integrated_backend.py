@@ -338,8 +338,7 @@ def submit_report():
 
         gps_data = data.get('gps_coordinates', {})
         reported_size = data.get('size', 'Not Specified')
-        geocoded_addr = data.get('geocoded_address')
-
+        
         new_report = Report(
             tracking_number=tracking_number,
             image_filename=image_filename or '',
@@ -349,10 +348,9 @@ def submit_report():
             user_reported_size=reported_size,
             state=data.get('state', 'Lagos'),
             lga=data.get('lga'),
-            gps_latitude=gps_data.get('lat'),
-            gps_longitude=gps_data.get('lng'),
+            gps_latitude=gps_data.get('latitude'),
+            gps_longitude=gps_data.get('longitude'),
             gps_detected=bool(gps_data),
-            geocoded_address=geocoded_addr,
             status='submitted',
             damage_type='processing'
         )
@@ -410,9 +408,6 @@ def get_admin_reports():
                 'id': r.id,
                 'tracking_number': r.tracking_number,
                 'location': r.location,
-                'geocoded_address': r.geocoded_address,
-                'gps_latitude': r.gps_latitude,
-                'gps_longitude': r.gps_longitude,
                 'description': r.description,
                 'damage_type': r.damage_type or 'processing',
                 'severity_score': (r.severity_score or 0) / 100.0,

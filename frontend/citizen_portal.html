@@ -210,21 +210,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(135deg, #15803d, #166534);
         }
-        
-        .parallax-bg {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .parallax-element {
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
-        }
-        
-        @keyframes parallaxSlide {
-            0% { transform: translateY(0px); }
-            100% { transform: translateY(var(--parallax-offset, 0px)); }
-        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -274,9 +259,9 @@
     </nav>
 
     <!-- Hero Section -->
-    <section id="home" class="parallax-bg relative min-h-screen flex items-center hero-gradient overflow-hidden">
+    <section id="home" class="relative min-h-screen flex items-center hero-gradient overflow-hidden">
         <!-- Background Image -->
-        <div class="parallax-element absolute inset-0 hero-image" data-parallax="0.5"></div>
+        <div class="absolute inset-0 hero-image"></div>
         
         <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-10">
@@ -338,7 +323,7 @@
     </section>
 
     <!-- About Section -->
-    <section id="about" class="parallax-bg py-20 bg-gradient-to-b from-white to-gray-50">
+    <section id="about" class="py-20 bg-gradient-to-b from-white to-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Header -->
             <div class="text-center mb-16">
@@ -385,7 +370,7 @@
                             <i class="fas fa-database text-green-600 text-2xl"></i>
                         </div>
                         <h5 class="font-semibold text-gray-900 mb-2">Data-Driven Decisions</h5>
-                        <p class="text-gray-600 text-sm">Enable governments make informed decisions through comprehensive analytics</p>
+                        <p class="text-gray-600 text-sm">Enable informed decision making through comprehensive analytics</p>
                     </div>
 
                     <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-md hover:shadow-lg hover:border-green-300 transition-all duration-300">
@@ -401,7 +386,7 @@
     </section>
 
     <!-- How It Works Section -->
-    <section class="parallax-bg py-20 bg-white relative overflow-hidden">
+    <section class="py-20 bg-white relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
             <div class="text-center mb-16 animate-slide-up">
@@ -787,7 +772,7 @@
     </section>
 
     <!-- Recent Reports Section -->
-    <section class="parallax-bg py-20 section-bg">
+    <section class="py-20 section-bg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 animate-slide-up">
                 <span class="text-green-600 font-semibold text-sm uppercase tracking-wider mb-2 block">Community Impact</span>
@@ -944,62 +929,5 @@
 
     <script src="frontend/config.js"></script>
     <script src="frontend/citizen_portal.js"></script>
-    
-    <script>
-        let parallaxElements = [];
-        let ticking = false;
-        let lastScrollY = 0;
-        
-        function initParallax() {
-            parallaxElements = document.querySelectorAll('[data-parallax]');
-        }
-        
-        function updateParallax() {
-            parallaxElements.forEach(element => {
-                const parallaxValue = parseFloat(element.getAttribute('data-parallax')) || 0.5;
-                const elementTop = element.closest('section').offsetTop;
-                const offset = (window.pageYOffset - elementTop) * parallaxValue;
-                element.style.transform = `translateY(${offset}px)`;
-            });
-            
-            updateSectionAnimations();
-            ticking = false;
-        }
-        
-        function updateSectionAnimations() {
-            const sections = document.querySelectorAll('.parallax-bg');
-            
-            sections.forEach(section => {
-                const sectionTop = section.getBoundingClientRect().top;
-                const sectionHeight = section.offsetHeight;
-                const windowHeight = window.innerHeight;
-                
-                if (sectionTop < windowHeight && sectionTop + sectionHeight > 0) {
-                    const parallaxFactor = Math.min(1, (windowHeight - sectionTop) / (windowHeight + sectionHeight));
-                    section.style.opacity = Math.max(0.7, 0.85 + parallaxFactor * 0.15);
-                }
-            });
-        }
-        
-        function onScroll() {
-            lastScrollY = window.pageYOffset;
-            
-            if (!ticking) {
-                window.requestAnimationFrame(updateParallax);
-                ticking = true;
-            }
-        }
-        
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('load', () => {
-            initParallax();
-            updateParallax();
-        });
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            initParallax();
-            updateParallax();
-        });
-    </script>
 </body>
 </html>

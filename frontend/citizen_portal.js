@@ -61,7 +61,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 let currentStream = null;
 let gpsCoordinates = null;
-let geocodedAddress = null;
 
 function restoreTrackingNumberFromStorage() {
     const savedTrackingNumber = localStorage.getItem('lastTrackingNumber');
@@ -206,49 +205,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             navigator.geolocation.getCurrentPosition(
-                async function(position) {
+                function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     gpsCoordinates = { lat, lng };
-
-                    // Perform reverse geocoding
-                    try {
-                        const geocodeResponse = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-                            {
-                                headers: {
-                                    'User-Agent': 'RoadWatch Nigeria (contact@roadwatchnigeria.site)'
-                                }
-                            }
-                        );
-                        const geocodeData = await geocodeResponse.json();
-
-                        if (geocodeData && geocodeData.display_name) {
-                            geocodedAddress = geocodeData.display_name;
-
-                            // Extract street-level address
-                            const addr = geocodeData.address;
-                            let shortAddress = '';
-                            if (addr.road) shortAddress += addr.road;
-                            if (addr.house_number) shortAddress = addr.house_number + ' ' + shortAddress;
-                            if (addr.suburb) shortAddress += shortAddress ? ', ' + addr.suburb : addr.suburb;
-
-                            // Fill the location input field with the detected address
-                            const locationField = document.getElementById('location');
-                            locationField.value = shortAddress || geocodeData.display_name;
-
-                            // Show coordinates underneath
-                            document.getElementById('gpsCoords').textContent = `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        } else {
-                            // Fallback to coordinates if geocoding fails
-                            document.getElementById('gpsCoords').textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-                        }
-                    } catch (geocodeError) {
-                        console.error('Geocoding error:', geocodeError);
-                        // Fallback to coordinates
-                        document.getElementById('gpsCoords').textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-                    }
-
+                    document.getElementById('gpsCoords').textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                    
                     const detectedLGAName = getLGAFromCoordinates(lat, lng);
                     const detectedLGA = document.getElementById('detectedLGA');
                     if (detectedLGAName) {
@@ -262,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     button.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
                     spinner.style.display = 'none';
                 },
-                function() {
+                function(error) {
                     alert('Unable to get location. Please try again.');
                     button.disabled = false;
                     spinner.style.display = 'none';
@@ -341,7 +303,6 @@ async function handleReportSubmit(e) {
             contact: document.getElementById('phone').value,
             photo: photoBase64,
             gps_coordinates: gpsCoordinates,
-            geocoded_address: geocodedAddress,
             size: damageSize // Include size in payload
         };
 
