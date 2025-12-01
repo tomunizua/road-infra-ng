@@ -1,148 +1,276 @@
-# 🛣️ RoadWatch Nigeria
+# RoadWatch Nigeria
 
-**AI-Powered Infrastructure Damage Reporting and Management System**
+AI-Powered Infrastructure Damage Reporting and Management System
 
-RoadWatch is a web application designed to empower Nigerian citizens to report road damage, which is then analyzed by an AI model, prioritized, and managed by an administrative backend. This project is intended to be a capstone for the ALU Software Engineering program.
+## Project Overview
 
----
+RoadWatch Nigeria is a web application enabling Nigerian citizens to report road damage through a mobile-friendly platform. The system uses machine learning to analyze images, detect damage types, estimate severity, and calculate repair costs. An administrative dashboard allows government officials to manage reports and optimize repair budgets.
 
-## 📜 Description
+## Live Application
 
-In many urban and rural areas, damaged road infrastructure like potholes poses significant risks to drivers and pedestrians. The process of reporting these issues is often slow and inefficient. RoadWatch tackles this problem by providing a simple, accessible platform for citizens to report damage using just a photo.
+- **Citizen Portal**: https://roadwatchnigeria.vercel.app/
+- **Admin Dashboard**: https://roadwatchnigeria.vercel.app/admin
+- **Admin Test Credentials**: 
+  - Username: `roadwatch_admin`
+  - Password: `mySecureInitialPassword123`
 
-Our system uses a machine learning model to automatically detect the presence of damage, estimate its severity, and calculate a preliminary repair cost. This data is fed into a secure admin dashboard where officials can view all submitted reports, manage their status, and use a budget optimization tool to schedule repairs in the most impactful way possible. Repo link: https://github.com/tomunizua/road-infra-ng.git
+## Technology Stack
 
-## ✨ Key Features
+- **Backend**: Python 3.10, Flask, SQLAlchemy
+- **Frontend**: HTML5, TailwindCSS, Vanilla JavaScript
+- **Database**: PostgreSQL (Supabase)
+- **ML/AI**: YOLOv8 (Roboflow API), OpenCV
+- **Optimization**: PuLP (linear programming)
+- **Authentication**: JWT
+- **Deployment**: Render (backend), Vercel (frontend)
 
-- **AI-Powered Damage Detection**: A Convolutional Neural Network (CNN) built with Keras/TensorFlow analyzes user-submitted images to detect potholes.
-- **Automatic Severity & Cost Estimation**: Reports are automatically assigned a severity score (1-10) and an estimated repair cost based on the AI's confidence.
-- **Citizen Reporting Portal**: A user-friendly, mobile-responsive portal for submitting reports with an image, location, and description.
-- **Unique Report Tracking**: Citizens receive a unique tracking number to monitor the status of their submitted report.
-- **Secure Admin Dashboard**: A password-protected dashboard for administrators to view, manage, and act on all submitted reports.
-- **Manual Report Management**: Admins can manually schedule repairs, assign contractors, or reject invalid reports with a reason.
-- **Budget Optimization**: An optimization tool using Linear Programming (PuLP) to help admins schedule the most critical repairs within a given budget.
+## Project Structure
 
-## 🔧 Tech Stack
+```
+roadwatch-nigeria/
+├── api/
+│   ├── integrated_backend.py          # Main Flask application
+│   ├── database.py                    # Database models
+│   ├── damagepipeline.py              # Roboflow AI pipeline
+│   ├── enhanced_budget.py             # Budget optimization engine
+│   ├── budget_api.py                  # Budget API endpoints
+│   └── scripts/
+├── frontend/
+│   ├── citizen_portal.html            # Citizen reporting interface
+│   ├── admin.html                     # Admin dashboard
+│   └── config.js                      # API configuration
+├── budget_optimization/
+│   ├── enhanced_budget.py
+│   ├── README.md
+│   └── test_budget_integration.py
+├── requirements.txt
+└── README.md
+```
 
-| Category      | Technology                                                                                             |
-|---------------|--------------------------------------------------------------------------------------------------------|
-| **Backend**   | Python, Flask, SQLAlchemy, Keras/TensorFlow, PuLP                                                      |
-| **Frontend**  | HTML, TailwindCSS, Vanilla JavaScript                                                                  |
-| **Database**  | SQLite (for development)                                                                               |
-| **Security**  | Basic HTTP Authentication for admin routes                                                             |
-
----
-
-## 🚀 Setup and Installation
-
-Follow these steps to set up the development environment and run the project locally.
+## Local Setup
 
 ### Prerequisites
-- Python 3.8+
-- `pip` (Python package installer)
 
-### 1. Clone the Repository
+- Python 3.10+
+- Git
 
+### Backend Installation
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/tomunizua/road-infra-ng.git
+   cd road-infra-ng
+   ```
+
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+4. **Set environment variables** in `.env`
+   ```
+   SQLALCHEMY_DATABASE_URI=postgresql://user:password@host:port/database
+   JWT_SECRET_KEY=your_secret_key
+   FLASK_ENV=development
+   ```
+
+5. **Run backend**
+   ```bash
+   python api/integrated_backend.py
+   ```
+   Server runs on `http://localhost:5000`
+
+### Frontend Setup
+
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Start local server**
+   ```bash
+   python -m http.server 8000
+   # or: npx http-server
+   ```
+
+3. **Access application**
+   - Citizen Portal: `http://localhost:8000/citizen_portal.html`
+   - Admin Dashboard: `http://localhost:8000/admin.html`
+   - Use test credentials for admin login
+
+## Key Features
+
+- **AI Damage Detection**: Machine learning analyzes images to detect potholes and road cracks
+- **Automatic Severity Scoring**: Reports receive severity scores (0-100) and repair cost estimates
+- **GPS Location Mapping**: Automatically detects user location and maps to Lagos LGAs
+- **Report Tracking**: Citizens receive unique tracking numbers to monitor status
+- **Admin Dashboard**: Manage reports, filter by status/LGA, and view analytics
+- **Budget Optimization**: Allocates repair budgets across reports using priority weighting
+- **Real-time Status Updates**: Bulk scheduling and report status management
+
+## Database Schema
+
+Primary table: `reports`
+
+| Field | Type | Description |
+|-------|------|-----------|
+| tracking_number | String | Unique report identifier |
+| location | String | Road location |
+| damage_type | String | Type of damage (pothole, crack, etc.) |
+| severity_score | Integer | 0-100 severity scale |
+| estimated_cost | Integer | Repair cost in Naira |
+| status | String | submitted, under_review, scheduled, completed |
+| gps_latitude | Float | GPS coordinate |
+| gps_longitude | Float | GPS coordinate |
+| lga | String | Local Government Area |
+| created_at | DateTime | Submission timestamp |
+
+## API Endpoints
+
+### Report Submission
+```
+POST /api/submit-report
+{
+    "location": "Ikeja Road, Lagos",
+    "lga": "Ikeja",
+    "description": "Large pothole",
+    "photo": "data:image/jpeg;base64,...",
+    "gps_coordinates": {"lat": 6.5244, "lng": 3.3792}
+}
+```
+
+### Track Report
+```
+GET /api/track/{tracking_number}
+```
+
+### Admin - List Reports
+```
+GET /api/admin/reports
+Authorization: Bearer {token}
+```
+
+### Admin - Update Status
+```
+POST /api/admin/update-status
+{
+    "report_id": 1,
+    "status": "scheduled"
+}
+```
+
+### Budget Optimization
+```
+POST /api/budget/optimize
+{
+    "repairs": [...],
+    "total_budget": 5000000,
+    "strategy": "priority_weighted"
+}
+```
+
+## Budget Optimization Strategies
+
+1. **Priority-Weighted**: Balances severity, urgency, area, and depth
+2. **Severity-First**: Prioritizes high-risk repairs
+3. **Proportional**: Fair allocation based on estimated costs
+4. **Hybrid**: Guarantees critical repairs, optimizes remainder
+
+## AI Damage Detection
+
+- **Model**: YOLOv8 via Roboflow
+- **Input**: User-submitted images (max 10MB, PNG/JPG)
+- **Output**: Damage type, location, confidence score
+- **Processing**: OpenCV analyzes damage dimensions for severity estimation
+
+## Deployment
+
+### Backend (Render)
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `bash start.sh`
+- Environment: Set `ROBOFLOW_API_KEY`, `JWT_SECRET_KEY`, `SQLALCHEMY_DATABASE_URI`
+
+### Frontend (Vercel)
+- Automatic deployment from GitHub
+- Static file serving from `frontend/` directory
+- Update API URL in `config.js` for production
+
+## Testing
+
+Run backend tests:
 ```bash
-# Replace with your actual GitHub repository link
-git clone https://github.com/tomunizua/road-infra-ng.git
-cd road-infra-ng
+python -m unittest api/test_budget_pipeline.py
 ```
 
-### 2. Set Up Backend
-
-First, create and activate a virtual environment. This isolates the project's dependencies.
-
+Run budget optimization tests:
 ```bash
-# Navigate to the backend directory
-cd backend
-
-# Create a virtual environment
-python -m venv venv
-
-# Activate the virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+cd budget_optimization
+python test_budget_integration.py
 ```
 
-Next, install the required Python packages from the `requirements.txt` file.
-
+Run integration tests:
 ```bash
-pip install -r ../requirements.txt
+python test_sync.py
 ```
 
-### 3. Run the Application
+## Troubleshooting
 
-With the virtual environment still active, start the Flask backend server.
+**Backend won't start**
+- Check port 5000 not in use: `lsof -i :5000`
+- Verify database connection: `SQLALCHEMY_DATABASE_URI` in .env
+- Run `python api/scripts/debug.py` for diagnostics
 
-```bash
-python app.py
+**Reports not showing in admin**
+- Verify database connection to Supabase
+- Check admin authentication token valid
+- Clear browser cache
+
+**Images not uploading**
+- Verify file size under 10MB
+- Check file format (PNG/JPG)
+- Ensure Roboflow API key is valid
+
+**GPS not detecting location**
+- Requires HTTPS or localhost
+- Check browser geolocation permissions
+- Verify GPS service enabled on device
+
+## Configuration
+
+
+### Database
+Use Supabase PostgreSQL connection string:
+```
+SQLALCHEMY_DATABASE_URI=postgresql://user:password@host:port/database
 ```
 
-The server will start on `http://localhost:5000`. You should see log messages indicating that the model has loaded and the database is initialized.
+## File Upload Security
 
-### 4. Access the Portals
+- Max file size: 10MB
+- Allowed formats: PNG, JPG, JPEG
+- Files stored in `/tmp/uploads` with unique names
+- Automatic format conversion to JPEG
 
-- **Citizen Portal**: Open your web browser and navigate to the `citizen_portal.html` file located in the `frontend` directory, or access it via `http://localhost:5000/citizen_portal.html`.
-- **Admin Dashboard**: To access the secure admin dashboard, navigate to:
-  - **URL**: `http://localhost:5000/admin`
-  - **Username**: `admin`
-  - **Password**: `secret`
+## Known Limitations
 
----
+- Currently covers Lagos State only
+- Roboflow free tier has API rate limits
+- Mobile camera tested on modern browsers
+- GPS detection requires HTTPS or localhost
 
-## 🎨 Designs
+## Support
 
-### System Architecture
+- Email: t.omunizua@alustudent.com
+- GitHub: https://github.com/tomunizua/road-infra-ng
+- Final report: https://docs.google.com/document/d/1Ikngcf0tBQV4sPO6RzzWXpw5DFOlAZNf/edit?usp=sharing&ouid=117352081927827611025&rtpof=true&sd=true
 
-The application follows a simple client-server architecture.
+## License
 
-```
-[Citizen's Browser] ----> [Flask Backend (API)] <----> [SQLite DB]
-       |                        |
-       |                        |-----> [Keras Model]
-       |
-[Admin's Browser] ------> [Flask Backend (API)]
-```
-
-### App Interfaces
-
-**Citizen Reporting Portal**
-!Citizen Portal Screenshot
-
-**Admin Dashboard**
-!Admin Dashboard Screenshot
-
----
-
-## ☁️ Deployment Plan
-
-While the project currently runs in a development environment, a production deployment would involve the following steps:
-
-1.  **Backend**:
-    -   Containerize the Flask application using **Docker**.
-    -   Use a production-grade WSGI server like **Gunicorn** to run the app.
-    -   Place the Gunicorn server behind a reverse proxy like **Nginx** for SSL termination, caching, and load balancing.
-    -   Host the container on a cloud service like **Heroku**, **AWS Elastic Beanstalk**, or **DigitalOcean App Platform**.
-
-2.  **Database**:
-    -   Migrate from SQLite to a more robust, production-ready database like **PostgreSQL** or **MySQL**.
-
-3.  **Static Files & Model**:
-    -   Store the ML model (`.h5` file) and user-uploaded images in a cloud storage solution like **AWS S3** or **Google Cloud Storage**.
-    -   Serve the frontend static files (HTML, CSS, JS) directly from Nginx or a Content Delivery Network (CDN) for better performance.
-
-4.  **Security & Configuration**:
-    -   Manage all sensitive information (database URI, secret keys, admin credentials) using **environment variables** instead of hardcoding them.
-    -   Implement a more robust authentication system (e.g., JWT or session-based logins with hashed passwords) for the admin dashboard.
-
----
-
-## 🎥 Video Demo
-
-*https://drive.google.com/file/d/10Ws0XObBgsf1iix94AFz-xmEkm-5Vi7e/view?usp=sharing*
-
-Watch a video demonstration of RoadWatch Nigeria here
-
+ALU Software Engineering Capstone Project
